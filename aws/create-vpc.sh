@@ -10,7 +10,7 @@ SUBNET_PRIVATE_AZ=$AWS_REGION"b"
 SUBNET_PRIVATE_NAME="10.0.2.0 - "$AWS_REGION"b"
 CHECK_FREQUENCY=5
 KEY_NAME="key_Equipe_1"
-IMAGE_ID="ami-00c08ad1a6ca8ca7c"
+IMAGE_ID="ami-0f7cd40eac2214b37"
  
 # Creation VPC
 echo "Creation VPC"
@@ -147,8 +147,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
     --key-name $KEY_NAME \
     --security-group-ids $GROUP_ID \
     --subnet-id $SUBNET_PUBLIC_ID \
-#    --user-data file://install.sh | sudo '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
-    --user-data file://install-jenkins-ansible.sh)
+    --user-data file://install-jenkins-ansible.sh | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
  
 echo "L'instance est lancée avec l'ID "$INSTANCE_ID
  
