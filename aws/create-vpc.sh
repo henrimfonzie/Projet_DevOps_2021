@@ -151,6 +151,8 @@ INSTANCE_ID=$(aws ec2 run-instances \
  
 echo "L'instance est lancée avec l'ID "$INSTANCE_ID
  
+#aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$VPC_NAME
+
 # Récupérer l'adresse IP Publique de l'instance :
 INSTANCE_IP=$(aws ec2 describe-instances \
     --instance-ids $INSTANCE_ID \
@@ -158,3 +160,10 @@ INSTANCE_IP=$(aws ec2 describe-instances \
     --output text )
  
 echo "Instance Jenkins prete à être utilisée"
+
+
+# Creation d'un IP Elastic pour EC2
+ELASTIC_IP=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
+
+# Affectation de l'IP Elastic pour la premiere EC2 ($INSTANCE_ID)
+aws ec2 associate-address --instance-id $INSTANCE_ID --public-ip $ELASTIC_IP
