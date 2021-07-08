@@ -34,6 +34,8 @@ SUBNET_PUBLIC_ID=$(aws ec2 create-subnet \
 echo "  Subnet ID '$SUBNET_PUBLIC_ID' CREATED in '$SUBNET_PUBLIC_AZ'" \
   "Availability Zone."
  
+aws ec2 create-tags --resources $SUBNET_PUBLIC_ID --tags Key=Name,Value="GRP1_Pub_SubNet"
+
 # Create Private Subnet
 echo "Creating Private Subnet..."
 SUBNET_PRIVATE_ID=$(aws ec2 create-subnet \
@@ -44,6 +46,8 @@ SUBNET_PRIVATE_ID=$(aws ec2 create-subnet \
   --output text )
 echo "  Subnet ID '$SUBNET_PRIVATE_ID' CREATED in '$SUBNET_PRIVATE_AZ'" \
   "Availability Zone."
+  
+aws ec2 create-tags --resources $SUBNET_PRIVATE_ID --tags Key=Name,Value="GRP1_Priv_SubNet"
  
 # Create Internet gateway
 echo "Creating Internet Gateway..."
@@ -102,13 +106,34 @@ if test -f "$KEY_NAME.pem"
 fi
  
 aws ec2 create-key-pair \
-    --key-name $KEY_NAME \
+    --key-name $KEY_NAME"_jenkins" \
     --query 'KeyMaterial' \
-    --output text > $KEY_NAME.pem
+    --output text > $KEY_NAME"_jenkins".pem
  
-chmod 400 $KEY_NAME.pem
+chmod 400 $KEY_NAME"_jenkins".pem
+
+aws ec2 create-key-pair \
+    --key-name $KEY_NAME"_dev" \
+    --query 'KeyMaterial' \
+    --output text > $KEY_NAME"_dev".pem
  
-echo "Clé SSH crée et prête a être utilisée"
+chmod 400 $KEY_NAME"_dev".pem
+ 
+aws ec2 create-key-pair \
+    --key-name $KEY_NAME"_prod" \
+    --query 'KeyMaterial' \
+    --output text > $KEY_NAME"_prod".pem
+ 
+chmod 400 $KEY_NAME"_prod".pem
+ 
+aws ec2 create-key-pair \
+    --key-name $KEY_NAME"_test" \
+    --query 'KeyMaterial' \
+    --output text > $KEY_NAME"_test".pem
+ 
+chmod 400 $KEY_NAME"_test".pem
+ 
+echo "Clés SSH crées et prêtes a être utilisées"
  
 # Création du groupe de sécurité
 GROUP_ID=$(aws ec2 create-security-group \
@@ -135,24 +160,84 @@ aws ec2 authorize-security-group-ingress \
     --protocol tcp \
     --port 80 \
     --cidr 0.0.0.0/0
+	
+aws ec2 authorize-security-group-ingress \
+    --group-id $GROUP_ID \
+    --protocol tcp \
+    --port 8080 \
+    --cidr 0.0.0.0/0
+ 	
+aws ec2 authorize-security-group-ingress \
+    --group-id $GROUP_ID \
+    --protocol tcp \
+    --port 5000 \
+    --cidr 0.0.0.0/0
  
 echo 'Les règles de sécurité ont été ajoutées'
  
 # Lancer l'instance EC2
  
-INSTANCE_ID=$(aws ec2 run-instances \
+INSTANCE_ID_JENKINS=$(aws ec2 run-instances \
     --image-id $IMAGE_ID \
     --count 1 \
     --instance-type t2.micro \
-    --key-name $KEY_NAME \
+    --key-name $KEY_NAME"_jenkins" \
     --security-group-ids $GROUP_ID \
     --subnet-id $SUBNET_PUBLIC_ID \
     --user-data file://install-jenkins-ansible.sh | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
- 
-echo "L'instance est lancée avec l'ID "$INSTANCE_ID
- 
-#aws ec2 create-tags --resources $INSTANCE_ID --tags Key=Name,Value=$VPC_NAME
+	
 
+aws ec2 create-tags --resources $INSTANCE_ID_JENKINS --tags Key=Name,Value="GRP1_EC2_Jenkins"
+ 
+echo "L'instance est lancée avec l'ID "$INSTANCE_ID_JENKINS
+ 
+INSTANCE_ID_DEV=$(aws ec2 run-instances \
+    --image-id $IMAGE_ID \
+    --count 1 \
+    --instance-type t2.micro \
+    --key-name $KEY_NAME"_dev" \
+    --security-group-ids $GROUP_ID \
+    --subnet-id $SUBNET_PUBLIC_ID  | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
+	
+aws ec2 create-tags --resources $INSTANCE_ID_DEV --tags Key=Name,Value="GRP1_EC2_DEV"
+	
+INSTANCE_ID_PROD=$(aws ec2 run-instances \
+    --image-id $IMAGE_ID \
+    --count 1 \
+    --instance-type t2.micro \
+    --key-name $KEY_NAME"_prod" \
+    --security-group-ids $GROUP_ID \
+    --subnet-id $SUBNET_PUBLIC_ID  | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
+aws ec2 create-tags --resources $INSTANCE_ID_PROD --tags Key=Name,Value="GRP1_EC2_PROD"
+	
+INSTANCE_ID_TEST=$(aws ec2 run-instances \
+    --image-id $IMAGE_ID \
+    --count 1 \
+    --instance-type t2.micro \
+    --key-name $KEY_NAME"_test" \
+    --security-group-ids $GROUP_ID \
+    --subnet-id $SUBNET_PUBLIC_ID  | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
+aws ec2 create-tags --resources $INSTANCE_ID_TEST --tags Key=Name,Value="GRP1_EC2_TEST"
+ 
+ELASTIC_IP_JENKINS=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
+ELASTIC_IP_PROD=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
+ELASTIC_IP_TEST=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
+ELASTIC_IP_DEV=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
+echo "Waiting for EC2 start ..."
+sleep 60
+aws ec2 associate-address --instance-id $INSTANCE_ID_JENKINS --public-ip $ELASTIC_IP_JENKINS
+aws ec2 associate-address --instance-id $INSTANCE_ID_DEV --public-ip $ELASTIC_IP_DEV
+aws ec2 associate-address --instance-id $INSTANCE_ID_PROD --public-ip $ELASTIC_IP_PROD
+aws ec2 associate-address --instance-id $INSTANCE_ID_TEST --public-ip $ELASTIC_IP_TEST
+
+echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
+test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
+prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
+
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3">machines.txt
+ 
 # Récupérer l'adresse IP Publique de l'instance :
 INSTANCE_IP=$(aws ec2 describe-instances \
     --instance-ids $INSTANCE_ID \
@@ -161,9 +246,14 @@ INSTANCE_IP=$(aws ec2 describe-instances \
  
 echo "Instance Jenkins prete à être utilisée"
 
+echo "VPC_ID:$VPC_ID
+SUBNET_PUBLIC_ID:$SUBNET_PUBLIC_ID
+SUBNET_PRIVATE_ID:$SUBNET_PRIVATE_ID
+GATEWAY_ID:$IGW_ID
+ROUTE_TABLE_ID:$ROUTE_TABLE_ID
+SECURITY_GROUP_ID:$GROUP_ID
+INSTANCE_ID_JENKINS:$INSTANCE_ID_JENKINS
+INSTANCE_ID_DEV:$INSTANCE_ID_DEV
+INSTANCE_ID_TEST:$INSTANCE_ID_TEST
+INSTANCE_ID_PROD:$INSTANCE_ID_PROD" > infra_ID.txt
 
-# Creation d'un IP Elastic pour EC2
-ELASTIC_IP=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
-
-# Affectation de l'IP Elastic pour la premiere EC2 ($INSTANCE_ID)
-aws ec2 associate-address --instance-id $INSTANCE_ID --public-ip $ELASTIC_IP
