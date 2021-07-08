@@ -12,6 +12,39 @@ CHECK_FREQUENCY=5
 KEY_NAME="key_Equipe_1"
 IMAGE_ID="ami-0f7cd40eac2214b37"
  
+ 
+#Function Create Key SSH with exist check
+aws_ssh_key_gen(){
+	KEY=$1
+	if aws ec2 wait key-pair-exists --key-names $KEY
+		then
+		echo "La clé $KEY existe déjà, on la supprime"
+		aws ec2 delete-key-pair --key-name $KEY
+	fi
+	 
+	if test -f "$KEY.pem"
+		then
+		sudo rm -f $KEY.pem
+	fi
+	 
+	aws ec2 create-key-pair \
+		--key-name $KEY \
+		--query 'KeyMaterial' \
+		--output text > $KEY.pem
+	 
+	chmod 400 $KEY.pem
+
+}
+
+aws_set_tcp(){
+	GROUP=$1
+	PORT=$2
+	aws ec2 authorize-security-group-ingress \
+		--group-id $GROUP \
+		--protocol tcp \
+		--port $PORT \
+		--cidr 0.0.0.0/0
+}
 # Creation VPC
 echo "Creation VPC"
 VPC_ID=$(aws ec2 create-vpc \
@@ -76,7 +109,7 @@ RESULT=$(aws ec2 create-route \
   --destination-cidr-block 0.0.0.0/0 \
   --gateway-id $IGW_ID )
 echo "  Route to '0.0.0.0/0' via Internet Gateway ID '$IGW_ID' ADDED to" \
-  "Route Table ID '$ROUTE_TABLE_ID'."
+  "Route Table ID '$ROUTE_TABLE_ID'."a
  
 # Associate Public Subnet with Route Table
 RESULT=$(aws ec2 associate-route-table  \
@@ -93,45 +126,11 @@ aws ec2 modify-subnet-attribute \
 echo " 'Auto-assign Public IP' ENABLED on Public Subnet ID" $SUBNET_PUBLIC_ID
  
 # Creation clé SSH
+aws_ssh_key_gen $KEY_NAME"_jenkins"
+aws_ssh_key_gen $KEY_NAME"_dev"
+aws_ssh_key_gen $KEY_NAME"_prod"
+aws_ssh_key_gen $KEY_NAME"_test"
  
-if aws ec2 wait key-pair-exists --key-names $KEY_NAME
-    then
-    echo 'La clé existe déjà, on la supprime'
-    aws ec2 delete-key-pair --key-name $KEY_NAME
-fi
- 
-if test -f "$KEY_NAME.pem"
-    then
-    sudo rm -f $KEY_NAME.pem
-fi
- 
-aws ec2 create-key-pair \
-    --key-name $KEY_NAME"_jenkins" \
-    --query 'KeyMaterial' \
-    --output text > $KEY_NAME"_jenkins".pem
- 
-chmod 400 $KEY_NAME"_jenkins".pem
-
-aws ec2 create-key-pair \
-    --key-name $KEY_NAME"_dev" \
-    --query 'KeyMaterial' \
-    --output text > $KEY_NAME"_dev".pem
- 
-chmod 400 $KEY_NAME"_dev".pem
- 
-aws ec2 create-key-pair \
-    --key-name $KEY_NAME"_prod" \
-    --query 'KeyMaterial' \
-    --output text > $KEY_NAME"_prod".pem
- 
-chmod 400 $KEY_NAME"_prod".pem
- 
-aws ec2 create-key-pair \
-    --key-name $KEY_NAME"_test" \
-    --query 'KeyMaterial' \
-    --output text > $KEY_NAME"_test".pem
- 
-chmod 400 $KEY_NAME"_test".pem
  
 echo "Clés SSH crées et prêtes a être utilisées"
  
@@ -147,31 +146,11 @@ echo "Le groupe de sécurité a bien été créé avec l'id "$GROUP_ID
  
 # Ajout des règles pour la connexion SSH
  
-aws ec2 authorize-security-group-ingress \
-    --group-id $GROUP_ID \
-    --protocol tcp \
-    --port 22 \
-    --cidr 0.0.0.0/0
- 
-# Ajout des règles pour la connexion HTTP
- 
-aws ec2 authorize-security-group-ingress \
-    --group-id $GROUP_ID \
-    --protocol tcp \
-    --port 80 \
-    --cidr 0.0.0.0/0
-	
-aws ec2 authorize-security-group-ingress \
-    --group-id $GROUP_ID \
-    --protocol tcp \
-    --port 8080 \
-    --cidr 0.0.0.0/0
- 	
-aws ec2 authorize-security-group-ingress \
-    --group-id $GROUP_ID \
-    --protocol tcp \
-    --port 5000 \
-    --cidr 0.0.0.0/0
+aws_set_tcp $GROUP_ID 22
+aws_set_tcp $GROUP_ID 80
+aws_set_tcp $GROUP_ID 8080
+aws_set_tcp $GROUP_ID 5000
+
  
 echo 'Les règles de sécurité ont été ajoutées'
  
@@ -224,26 +203,30 @@ ELASTIC_IP_PROD=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"/
 ELASTIC_IP_TEST=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
 ELASTIC_IP_DEV=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
 echo "Waiting for EC2 start ..."
-sleep 60
+sleep 30
 aws ec2 associate-address --instance-id $INSTANCE_ID_JENKINS --public-ip $ELASTIC_IP_JENKINS
 aws ec2 associate-address --instance-id $INSTANCE_ID_DEV --public-ip $ELASTIC_IP_DEV
 aws ec2 associate-address --instance-id $INSTANCE_ID_PROD --public-ip $ELASTIC_IP_PROD
 aws ec2 associate-address --instance-id $INSTANCE_ID_TEST --public-ip $ELASTIC_IP_TEST
 
-echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
-test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
-prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
+scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_dev.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_prod.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_test.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
 
-
+echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_dev.pem
+test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_test.pem
+prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_prod.pem
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3">machines.txt
+
+scp -i $KEY_NAME"_jenkins.pem" ./machines.txt file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/
  
 # Récupérer l'adresse IP Publique de l'instance :
 INSTANCE_IP=$(aws ec2 describe-instances \
     --instance-ids $INSTANCE_ID \
     --query 'Reservations[0].Instances[0].PublicIpAddress' \
     --output text )
- 
+
 echo "Instance Jenkins prete à être utilisée"
 
 echo "VPC_ID:$VPC_ID
@@ -255,5 +238,4 @@ SECURITY_GROUP_ID:$GROUP_ID
 INSTANCE_ID_JENKINS:$INSTANCE_ID_JENKINS
 INSTANCE_ID_DEV:$INSTANCE_ID_DEV
 INSTANCE_ID_TEST:$INSTANCE_ID_TEST
-INSTANCE_ID_PROD:$INSTANCE_ID_PROD" > infra_ID.txt
-
+INSTANCE_ID_PROD:$INSTANCE_ID_PROD" > infra_ID.txt 
