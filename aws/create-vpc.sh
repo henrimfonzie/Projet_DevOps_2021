@@ -209,11 +209,17 @@ aws ec2 associate-address --instance-id $INSTANCE_ID_DEV --public-ip $ELASTIC_IP
 aws ec2 associate-address --instance-id $INSTANCE_ID_PROD --public-ip $ELASTIC_IP_PROD
 aws ec2 associate-address --instance-id $INSTANCE_ID_TEST --public-ip $ELASTIC_IP_TEST
 
-echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
-test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
-prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/Ansible-Training/keys/t1
+scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_dev.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_prod.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_test.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+
+echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_dev.pem
+test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_test.pem
+prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_prod.pem
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3">machines.txt
+
+scp -i $KEY_NAME"_jenkins.pem" ./machines.txt file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/ansible
  
 # Récupérer l'adresse IP Publique de l'instance :
 INSTANCE_IP=$(aws ec2 describe-instances \

@@ -3,6 +3,9 @@
 #à tester
 #export DEBIAN_FRONTEND=noninteractive
 ## On met à jour le systeme pour pouvoir insaller
+
+
+mkdir -p /home/ubuntu/ansible
 sudo apt update -y
  
 ## Installer le pré-requis Java 
