@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Définition des variables :
 AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
 VPC_NAME="VPC_Equipe_1"
@@ -12,8 +10,8 @@ SUBNET_PRIVATE_AZ=$AWS_REGION"b"
 SUBNET_PRIVATE_NAME="10.0.2.0 - "$AWS_REGION"b"
 CHECK_FREQUENCY=5
 KEY_NAME="key_Equipe_1"
-IMAGE_ID="ami-00c08ad1a6ca8ca7c"
-
+IMAGE_ID="ami-0f7cd40eac2214b37"
+ 
 # Creation VPC
 echo "Creation VPC"
 VPC_ID=$(aws ec2 create-vpc \
@@ -21,6 +19,9 @@ VPC_ID=$(aws ec2 create-vpc \
   --query 'Vpc.{VpcId:VpcId}' \
   --output text )
 echo "  VPC ID '$VPC_ID' CREATED in '$AWS_REGION' region."
+
+# Creation d'un Nom de VPC
+aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=$VPC_NAME
 
 # Creation sous-réseau Public 
 echo "Creation sous-réseau Public "
@@ -32,7 +33,7 @@ SUBNET_PUBLIC_ID=$(aws ec2 create-subnet \
   --output text )
 echo "  Subnet ID '$SUBNET_PUBLIC_ID' CREATED in '$SUBNET_PUBLIC_AZ'" \
   "Availability Zone."
-
+ 
 # Create Private Subnet
 echo "Creating Private Subnet..."
 SUBNET_PRIVATE_ID=$(aws ec2 create-subnet \
@@ -43,20 +44,20 @@ SUBNET_PRIVATE_ID=$(aws ec2 create-subnet \
   --output text )
 echo "  Subnet ID '$SUBNET_PRIVATE_ID' CREATED in '$SUBNET_PRIVATE_AZ'" \
   "Availability Zone."
-
+ 
 # Create Internet gateway
 echo "Creating Internet Gateway..."
 IGW_ID=$(aws ec2 create-internet-gateway \
   --query 'InternetGateway.{InternetGatewayId:InternetGatewayId}' \
   --output text )
 echo "  Internet Gateway ID '$IGW_ID' CREATED."
-
+ 
 # Attach Internet gateway to your VPC
 aws ec2 attach-internet-gateway \
   --vpc-id $VPC_ID \
   --internet-gateway-id $IGW_ID 
 echo "  Internet Gateway ID '$IGW_ID' ATTACHED to VPC ID '$VPC_ID'."
-
+ 
 # Create Route Table
 echo "Creating Route Table..."
 ROUTE_TABLE_ID=$(aws ec2 create-route-table \
@@ -64,7 +65,7 @@ ROUTE_TABLE_ID=$(aws ec2 create-route-table \
   --query 'RouteTable.{RouteTableId:RouteTableId}' \
   --output text )
 echo "  Route Table ID '$ROUTE_TABLE_ID' CREATED."
-
+ 
 # Create route to Internet Gateway
 RESULT=$(aws ec2 create-route \
   --route-table-id $ROUTE_TABLE_ID \
@@ -72,43 +73,43 @@ RESULT=$(aws ec2 create-route \
   --gateway-id $IGW_ID )
 echo "  Route to '0.0.0.0/0' via Internet Gateway ID '$IGW_ID' ADDED to" \
   "Route Table ID '$ROUTE_TABLE_ID'."
-
+ 
 # Associate Public Subnet with Route Table
 RESULT=$(aws ec2 associate-route-table  \
   --subnet-id $SUBNET_PUBLIC_ID \
   --route-table-id $ROUTE_TABLE_ID )
 echo "  Public Subnet ID '$SUBNET_PUBLIC_ID' ASSOCIATED with Route Table ID" \
   "'$ROUTE_TABLE_ID'."
-
+ 
 # Enable Auto-assign Public IP on Public Subnet
 aws ec2 modify-subnet-attribute \
   --subnet-id $SUBNET_PUBLIC_ID \
   --map-public-ip-on-launch 
-
+ 
 echo " 'Auto-assign Public IP' ENABLED on Public Subnet ID" $SUBNET_PUBLIC_ID
-
+ 
 # Creation clé SSH
-
+ 
 if aws ec2 wait key-pair-exists --key-names $KEY_NAME
     then
     echo 'La clé existe déjà, on la supprime'
     aws ec2 delete-key-pair --key-name $KEY_NAME
 fi
-
+ 
 if test -f "$KEY_NAME.pem"
     then
     sudo rm -f $KEY_NAME.pem
 fi
-
+ 
 aws ec2 create-key-pair \
     --key-name $KEY_NAME \
     --query 'KeyMaterial' \
     --output text > $KEY_NAME.pem
-
+ 
 chmod 400 $KEY_NAME.pem
-
+ 
 echo "Clé SSH crée et prête a être utilisée"
-
+ 
 # Création du groupe de sécurité
 GROUP_ID=$(aws ec2 create-security-group \
     --group-name SSHAccess \
@@ -116,29 +117,29 @@ GROUP_ID=$(aws ec2 create-security-group \
     --description "Security group for SSH access" \
     --vpc-id $VPC_ID\
     --output text )
-
+ 
 echo "Le groupe de sécurité a bien été créé avec l'id "$GROUP_ID
-
+ 
 # Ajout des règles pour la connexion SSH
-
+ 
 aws ec2 authorize-security-group-ingress \
     --group-id $GROUP_ID \
     --protocol tcp \
     --port 22 \
     --cidr 0.0.0.0/0
-
+ 
 # Ajout des règles pour la connexion HTTP
-
+ 
 aws ec2 authorize-security-group-ingress \
     --group-id $GROUP_ID \
     --protocol tcp \
     --port 80 \
     --cidr 0.0.0.0/0
-
+ 
 echo 'Les règles de sécurité ont été ajoutées'
-
+ 
 # Lancer l'instance EC2
-
+ 
 INSTANCE_ID=$(aws ec2 run-instances \
     --image-id $IMAGE_ID \
     --count 1 \
@@ -146,17 +147,14 @@ INSTANCE_ID=$(aws ec2 run-instances \
     --key-name $KEY_NAME \
     --security-group-ids $GROUP_ID \
     --subnet-id $SUBNET_PUBLIC_ID \
-    --user-data file://script_deploiement.sh | sudo  jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
-
+    --user-data file://install-jenkins-ansible.sh | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
+ 
 echo "L'instance est lancée avec l'ID "$INSTANCE_ID
-
+ 
 # Récupérer l'adresse IP Publique de l'instance :
 INSTANCE_IP=$(aws ec2 describe-instances \
     --instance-ids $INSTANCE_ID \
     --query 'Reservations[0].Instances[0].PublicIpAddress' \
     --output text )
-
-echo "Instance prête à être utilisée"
-
-echo "Veuillez effectuer les dernières étapes sur http://"$INSTANCE_IP
-
+ 
+echo "Instance Jenkins prete à être utilisée"
