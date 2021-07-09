@@ -11,7 +11,11 @@ SUBNET_PRIVATE_NAME="10.0.2.0 - "$AWS_REGION"b"
 CHECK_FREQUENCY=5
 KEY_NAME="key_Equipe_1"
 IMAGE_ID="ami-0f7cd40eac2214b37"
- 
+ENV_JENK="jenkins"
+ENV_DEV="dev"
+ENV_PROD="prod"
+ENV_TEST="test"
+INSTANCE_ID_JENKINS=""
  #T2 small pour nexus
  
 #Function Create Key SSH with exist check
@@ -23,9 +27,9 @@ aws_ssh_key_gen(){
 		aws ec2 delete-key-pair --key-name $KEY
 	fi
 	 
-	if test -f "$KEY.pem"
+	if test -f "./keys/$KEY.pem"
 		then
-		sudo rm -f $KEY.pem
+		sudo rm -f ./keys/$KEY.pem
 	fi
 	 
 	aws ec2 create-key-pair \
@@ -60,6 +64,7 @@ aws_create_EC2(){
 			--security-group-ids $GROUP_ID \
 			--subnet-id $SUBNET_PUBLIC_ID \
 			--user-data file://$File | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
+
 	else
 		ID=$(aws ec2 run-instances \
 			--image-id $IMAGE_ID \
@@ -70,9 +75,7 @@ aws_create_EC2(){
 			--subnet-id $SUBNET_PUBLIC_ID | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
 	fi
 	aws ec2 create-tags --resources $ID --tags Key=Name,Value="GRP1_EC2_$1"
-	
-	echo "L'instance $1 est créée avec l'ID $ID"
-	return $ID
+  echo $ID
 }
 aws_create_secu_group(){
 	VPC=$1
@@ -189,16 +192,19 @@ aws_set_tcp $GROUP_ID 22
 aws_set_tcp $GROUP_ID 80
 aws_set_tcp $GROUP_ID 8080
 aws_set_tcp $GROUP_ID 5000
-
- 
 echo 'Les règles de sécurité ont été ajoutées'
  
 # Lancer l'instance EC2
 
-INSTANCE_ID_JENKINS=aws_create_EC2 "jenkins" install-jenkins-ansible.sh 
-INSTANCE_ID_DEV=aws_create_EC2 "dev"
-INSTANCE_ID_PROD=aws_create_EC2 "prod"
-INSTANCE_ID_TEST=aws_create_EC2 "test"
+echo "create Instance Jenkins"
+INSTANCE_ID_JENKINS=$(aws_create_EC2 $ENV_JENK install-jenkins-ansible.sh)
+echo "L'instance $ENV_JENK est créée avec l'ID $INSTANCE_ID_JENKINS"
+INSTANCE_ID_DEV=$(aws_create_EC2 "$ENV_DEV")
+echo "L'instance $ENV_DEV est créée avec l'ID $INSTANCE_ID_DEV"
+INSTANCE_ID_PROD=$(aws_create_EC2 $ENV_PROD)
+echo "L'instance $ENV_PROD est créée avec l'ID $INSTANCE_ID_PROD"
+INSTANCE_ID_TEST=$(aws_create_EC2 $ENV_TEST)
+echo "L'instance $ENV_TEST est créée avec l'ID $INSTANCE_ID_TEST"
  
 #Allocation des IP Elastic
 ELASTIC_IP_JENKINS=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
@@ -217,19 +223,19 @@ aws ec2 associate-address --instance-id $INSTANCE_ID_TEST --public-ip $ELASTIC_I
 
 #Préparation prérequis Ansible
 #Copy SSH key (dev, prod & test) to Jenkins instance
-scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_dev.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
-scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_prod.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
-scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_test.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+scp -i $KEY_NAME"_"$ENV_JENK".pem" ./$KEY_NAME"_"$ENV_DEV".pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+scp -i $KEY_NAME"_"$ENV_JENK".pem" ./$KEY_NAME"_"$ENV_PROD".pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
+scp -i $KEY_NAME"_"$ENV_JENK".pem" ./$KEY_NAME"_"$ENV_TEST".pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
 
 #Create targets machine using data of générated item (IP, ssh key,user)
-echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_dev.pem
-test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_test.pem
-prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_prod.pem
+echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_"$ENV_DEV".pem
+test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_"$ENV_TEST".pem
+prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_"$ENV_PROD".pem
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3">machines.txt
 
 #copy the file to ~
-scp -i $KEY_NAME"_jenkins.pem" ./machines.txt file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu
+scp -i $KEY_NAME"_"$ENV_JENK".pem" ./machines.txt file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu
 
 echo "VPC_ID:$VPC_ID
 SUBNET_PUBLIC_ID:$SUBNET_PUBLIC_ID
@@ -241,3 +247,9 @@ INSTANCE_ID_JENKINS:$INSTANCE_ID_JENKINS
 INSTANCE_ID_DEV:$INSTANCE_ID_DEV
 INSTANCE_ID_TEST:$INSTANCE_ID_TEST
 INSTANCE_ID_PROD:$INSTANCE_ID_PROD" > infra_ID.txt
+
+if [ ! -d "./keys" ]
+then
+	mkdir keys
+fi
+mv *.pem keys/
