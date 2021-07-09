@@ -12,13 +12,14 @@ CHECK_FREQUENCY=5
 KEY_NAME="key_Equipe_1"
 IMAGE_ID="ami-0f7cd40eac2214b37"
  
+ #T2 small pour nexus
  
 #Function Create Key SSH with exist check
 aws_ssh_key_gen(){
 	KEY=$1
 	if aws ec2 wait key-pair-exists --key-names $KEY
 		then
-		echo 'La clé $KEY déjà, on la supprime'
+		echo "La clé $KEY déjà, on la supprime"
 		aws ec2 delete-key-pair --key-name $KEY
 	fi
 	 
@@ -44,6 +45,45 @@ aws_set_tcp(){
 		--protocol tcp \
 		--port $PORT \
 		--cidr 0.0.0.0/0
+}
+
+aws_create_EC2(){
+	NAME=$KEY_NAME"_"$1
+	if [ "$#" -eq 2 ]
+	then
+		File=$2
+		ID=$(aws ec2 run-instances \
+			--image-id $IMAGE_ID \
+			--count 1 \
+			--instance-type t2.micro \
+			--key-name $NAME \
+			--security-group-ids $GROUP_ID \
+			--subnet-id $SUBNET_PUBLIC_ID \
+			--user-data file://$File | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
+	else
+		ID=$(aws ec2 run-instances \
+			--image-id $IMAGE_ID \
+			--count 1 \
+			--instance-type t2.micro \
+			--key-name $NAME \
+			--security-group-ids $GROUP_ID \
+			--subnet-id $SUBNET_PUBLIC_ID | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
+	fi
+	aws ec2 create-tags --resources $ID --tags Key=Name,Value="GRP1_EC2_$1"
+	
+	echo "L'instance $1 est créée avec l'ID $ID"
+	return $ID
+}
+aws_create_secu_group(){
+	VPC=$1
+	NAME=$2
+	DESC=$3
+	return $(aws ec2 create-security-group \
+		--group-name $NAME \
+		--query 'GroupId' \
+		--description $DESC \
+		--vpc-id $VPC\
+		--output text )
 }
 # Creation VPC
 echo "Creation VPC"
@@ -141,7 +181,6 @@ GROUP_ID=$(aws ec2 create-security-group \
     --description "Security group for SSH access" \
     --vpc-id $VPC_ID\
     --output text )
- 
 echo "Le groupe de sécurité a bien été créé avec l'id "$GROUP_ID
  
 # Ajout des règles pour la connexion SSH
@@ -155,79 +194,42 @@ aws_set_tcp $GROUP_ID 5000
 echo 'Les règles de sécurité ont été ajoutées'
  
 # Lancer l'instance EC2
- 
-INSTANCE_ID_JENKINS=$(aws ec2 run-instances \
-    --image-id $IMAGE_ID \
-    --count 1 \
-    --instance-type t2.micro \
-    --key-name $KEY_NAME"_jenkins" \
-    --security-group-ids $GROUP_ID \
-    --subnet-id $SUBNET_PUBLIC_ID \
-    --user-data file://install-jenkins-ansible.sh | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
-	
 
-aws ec2 create-tags --resources $INSTANCE_ID_JENKINS --tags Key=Name,Value="GRP1_EC2_Jenkins"
+INSTANCE_ID_JENKINS=aws_create_EC2 "jenkins" install-jenkins-ansible.sh 
+INSTANCE_ID_DEV=aws_create_EC2 "dev"
+INSTANCE_ID_PROD=aws_create_EC2 "prod"
+INSTANCE_ID_TEST=aws_create_EC2 "test"
  
-echo "L'instance est lancée avec l'ID "$INSTANCE_ID_JENKINS
- 
-INSTANCE_ID_DEV=$(aws ec2 run-instances \
-    --image-id $IMAGE_ID \
-    --count 1 \
-    --instance-type t2.micro \
-    --key-name $KEY_NAME"_dev" \
-    --security-group-ids $GROUP_ID \
-    --subnet-id $SUBNET_PUBLIC_ID  | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
-	
-aws ec2 create-tags --resources $INSTANCE_ID_DEV --tags Key=Name,Value="GRP1_EC2_DEV"
-	
-INSTANCE_ID_PROD=$(aws ec2 run-instances \
-    --image-id $IMAGE_ID \
-    --count 1 \
-    --instance-type t2.micro \
-    --key-name $KEY_NAME"_prod" \
-    --security-group-ids $GROUP_ID \
-    --subnet-id $SUBNET_PUBLIC_ID  | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
-aws ec2 create-tags --resources $INSTANCE_ID_PROD --tags Key=Name,Value="GRP1_EC2_PROD"
-	
-INSTANCE_ID_TEST=$(aws ec2 run-instances \
-    --image-id $IMAGE_ID \
-    --count 1 \
-    --instance-type t2.micro \
-    --key-name $KEY_NAME"_test" \
-    --security-group-ids $GROUP_ID \
-    --subnet-id $SUBNET_PUBLIC_ID  | sudo jq '.Instances[0].InstanceId' | sed -e 's/^"//' -e 's/"$//' )
-aws ec2 create-tags --resources $INSTANCE_ID_TEST --tags Key=Name,Value="GRP1_EC2_TEST"
- 
+#Allocation des IP Elastic
 ELASTIC_IP_JENKINS=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
 ELASTIC_IP_PROD=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
 ELASTIC_IP_TEST=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
 ELASTIC_IP_DEV=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
+
 echo "Waiting for EC2 start ..."
 sleep 60
+
+#Associate IP Elastic to EC2 instance
 aws ec2 associate-address --instance-id $INSTANCE_ID_JENKINS --public-ip $ELASTIC_IP_JENKINS
 aws ec2 associate-address --instance-id $INSTANCE_ID_DEV --public-ip $ELASTIC_IP_DEV
 aws ec2 associate-address --instance-id $INSTANCE_ID_PROD --public-ip $ELASTIC_IP_PROD
 aws ec2 associate-address --instance-id $INSTANCE_ID_TEST --public-ip $ELASTIC_IP_TEST
 
+#Préparation prérequis Ansible
+#Copy SSH key (dev, prod & test) to Jenkins instance
 scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_dev.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
 scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_prod.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
 scp -i $KEY_NAME"_jenkins.pem" ./$KEY_NAME"_test.pem" file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
 
-echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_dev.pem
-test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_test.pem
-prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/key_Equipe_1_prod.pem
+#Create targets machine using data of générated item (IP, ssh key,user)
+echo "dev ansible_host=$ELASTIC_IP_DEV ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_dev.pem
+test ansible_host=$ELASTIC_IP_TEST ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_test.pem
+prod ansible_host=$ELASTIC_IP_PROD ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/"$KEY_NAME"_prod.pem
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3">machines.txt
 
-scp -i $KEY_NAME"_jenkins.pem" ./machines.txt file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/ansible
- 
-# Récupérer l'adresse IP Publique de l'instance :
-INSTANCE_IP=$(aws ec2 describe-instances \
-    --instance-ids $INSTANCE_ID \
-    --query 'Reservations[0].Instances[0].PublicIpAddress' \
-    --output text )
- 
-echo "Instance Jenkins prete à être utilisée"
+#copy the file to ~
+scp -i $KEY_NAME"_jenkins.pem" ./machines.txt file-to-upload ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu
 
 echo "VPC_ID:$VPC_ID
 SUBNET_PUBLIC_ID:$SUBNET_PUBLIC_ID
