@@ -27,3 +27,9 @@
         msg: "Version info {{ versioninfo.stdout }}"
       # when: versioninfo is changed
 
+      #install git
+
+      #clone projet
+
+      #run projet flask
+

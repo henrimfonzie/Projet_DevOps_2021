@@ -22,7 +22,7 @@ aws_ssh_key_gen(){
 	KEY=$1
 	if aws ec2 wait key-pair-exists --key-names $KEY
 		then
-		echo "La clé $KEY existe déjà, on la supprime"
+		echo "La clé $KEY existe déjà, on la supprime!"
 		aws ec2 delete-key-pair --key-name $KEY
 	fi
 	 
@@ -36,6 +36,7 @@ aws_ssh_key_gen(){
 		--query 'KeyMaterial' \
 		--output text > $KEY.pem
 	 
+	echo " $KEY.pem Créée!"
 	chmod 400 $KEY.pem
 
 }
@@ -218,15 +219,13 @@ aws ec2 associate-address --instance-id $INSTANCE_ID_NEXUS --public-ip $ELASTIC_
 
 #Ajout fingerprint de la connexion SSH, ne demande pas la permission par la suite
 echo "Ajout des fingerprint Jenkins & Nexus"
-ssh-keyscan -H $ELASTIC_IP_JENKINS >> ~/.ssh/known_hosts
-ssh-keyscan -H $ELASTIC_IP_NEXUS >> ~/.ssh/known_hosts
-#ssh -i $KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS -o StrictHostKeyChecking=accept-new
-#ssh -i $KEY_NAME"_"$ENV_NEXUS".pem" ubuntu@$ELASTIC_IP_NEXUS -o StrictHostKeyChecking=accept-new
-#ssh -i -o StrictHostKeyChecking=accept-new
+ssh-keyscan -H $ELASTIC_IP_JENKINS >> ~/.ssh/known_hosts 
+ssh-keyscan -H $ELASTIC_IP_NEXUS >> ~/.ssh/known_hosts 
+
+
 #Préparation prérequis Ansible
 #Copy SSH key (dev, prod & test) to Jenkins instance
 echo "Copi Files to Jenkins Server ..."
-#sleep 100
 echo "Copie des SSH KEY vers le Serveur Jenkins"
 scp -i $KEY_NAME"_"$ENV_JENK".pem" ./$KEY_NAME"_"$ENV_DEV".pem" ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh  
 scp -i $KEY_NAME"_"$ENV_JENK".pem" ./$KEY_NAME"_"$ENV_PROD".pem" ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu/.ssh
@@ -251,13 +250,12 @@ scp -i $KEY_NAME"_"$ENV_JENK".pem" ./Appli-playbook.yml ubuntu@$ELASTIC_IP_JENKI
 
 #Ajout fingerprint de la connexion SSH sur la machine Jenkins (usage pour ansible)
 echo "Ajout des fingerprint Env_Dev to Jenkins"
-ssh -i $KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS "ssh-keyscan -H $ELASTIC_IP_DEV >> ~/.ssh/known_hosts"
-ssh -i $KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS "ssh-keyscan -H $ELASTIC_IP_PROD >> ~/.ssh/known_hosts"
+ssh -i $KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS "ssh-keyscan -H $ELASTIC_IP_DEV >> ~/.ssh/known_hosts" 
+ssh -i $KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS "ssh-keyscan -H $ELASTIC_IP_PROD >> ~/.ssh/known_hosts" 
 ssh -i $KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS "ssh-keyscan -H $ELASTIC_IP_TEST >> ~/.ssh/known_hosts"
 
 
-# aws cmd sur jenkins "ansible-playbook -i /home/ubuntu/machines.txt /home/ubuntu/Appli-paybook.yml" >> rediriger fichierlog%date
-
+#generation fichier infra (données relatifs aux composants créé)
 echo "VPC_ID:$VPC_ID
 SUBNET_PUBLIC_ID:$SUBNET_PUBLIC_ID
 SUBNET_PRIVATE_ID:$SUBNET_PRIVATE_ID
@@ -275,19 +273,18 @@ IP_TEST:$ELASTIC_IP_TEST
 INSTANCE_ID_PROD:$INSTANCE_ID_PROD
 IP_PROD:$ELASTIC_IP_PROD" > infra_ID.txt
 
+
+
 echo "File Infra.txt generated"
 
-# comment exec une cmd a distance sur instance ec2 
-# exec ansible-playbook
-# echo MDP jenkins par defaut /var/lib/jenkins/secrets/initialAdminPassword
-# echo MDP nexus par defaut /opt/nexus/sonatype-work/nexus3/admin.password
+# check and copy keys
 if [ ! -d "./keys" ]
 then
 	mkdir keys
 fi
 mv *.pem keys/
 
-
+# 3 boucle while l'install Ansible, Jenkins & nexus not finished il fait un sleep de 5sec
 echo "Getting Jenkins Password ..."
 JENKINS_KEY=""
 while [ "$JENKINS_KEY" == "" ]
@@ -295,7 +292,7 @@ do
     sleep 5
     JENKINS_KEY=$(ssh -i ./keys/$KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS 'sudo cat /var/lib/jenkins/secrets/initialAdminPassword' 2> /dev/null)
 done
-echo "Jenkins URL : $ELASTIC_IP_JENKINS:8080"
+echo "Jenkins URL : http://$ELASTIC_IP_JENKINS:8080"
 echo "Jenkins admin password ==> $JENKINS_KEY "
 NEXUS_KEY=""
 
@@ -305,7 +302,7 @@ do
     sleep 5
     NEXUS_KEY=$(ssh -i ./keys/$KEY_NAME"_"$ENV_NEXUS".pem" ubuntu@$ELASTIC_IP_NEXUS 'sudo cat /opt/nexus/sonatype-work/nexus3/admin.password' 2> /dev/null)
 done
-echo "Nexus URL : $ELASTIC_IP_NEXUS:8081"
+echo "Nexus URL : http://$ELASTIC_IP_NEXUS:8081"
 echo "Nexus admin password ==> $NEXUS_KEY "
 
 echo "Getting Ansible ready ..."
@@ -315,15 +312,14 @@ do
     sleep 5
     whichAnsible=$(ssh -i ./keys/$KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS 'which ansible-playbook')
 done
-
+# run playbook ansible
 echo "Playing PlayBook Ansible"
 ansiblepb=$(ssh -i ./keys/$KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS 'ansible-playbook -i /home/ubuntu/machines.txt /home/ubuntu/Appli-playbook.yml')
 echo $ansiblepb > pb.txt
 
-# aulieu du tail coupe avec les : ety prendre le dernier troncon 
+# Affichage du resultat final d'ansible
 val=$(cat pb.txt)
 IFS=':' read -ra ADDR <<< $val
- 
 len=${#ADDR[@]}-1
-echo "${ADDR[$len]}"
-# rediriger la sortie d'erreur des boucle while 2> ==> done 
+# ${myVar##*( )} retire les blanc au debut 
+echo ${ADDR[$len]##*( )}
