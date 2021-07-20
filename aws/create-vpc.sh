@@ -1,3 +1,4 @@
+#!/bin/sh
 # Définition des variables :
 AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
 VPC_NAME="VPC_Equipe_1"
@@ -40,7 +41,11 @@ aws_ssh_key_gen(){
 	chmod 400 $KEY.pem
 
 }
-
+aws_ec2_status(){
+	id=$1
+	val=$(aws ec2 describe-instance-status --instance-id $id --output text --query 'InstanceStatuses[0].InstanceState.{Name:Name}')
+	echo $val
+}
 aws_set_tcp(){
 	GROUP=$1
 	PORT=$2
@@ -207,7 +212,42 @@ ELASTIC_IP_DEV=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//
 ELASTIC_IP_NEXUS=$(aws ec2 allocate-address | sudo jq '.PublicIp' | sed -e 's/^"//' -e 's/"$//')
 
 echo "Waiting for EC2 start ..."
-sleep 30
+# sleep 30
+jenkins_status=$(aws_ec2_status $INSTANCE_ID_JENKINS)
+while [ "$jenkins_status" != "running" ]
+do
+    sleep 5
+	jenkins_status=$(aws_ec2_status $INSTANCE_ID_JENKINS)
+done
+echo "jenkins is running"
+dev_status=$(aws_ec2_status $INSTANCE_ID_DEV)
+while [ "$dev_status" != "running" ]
+do
+    sleep 5
+	dev_status=$(aws_ec2_status $INSTANCE_ID_DEV)
+done
+echo "dev is running"
+prod_status=$(aws_ec2_status $INSTANCE_ID_PROD)
+while [ "$prod_status" != "running" ]
+do
+    sleep 5
+	prod_status=$(aws_ec2_status $INSTANCE_ID_PROD)
+done
+echo "prod is running"
+test_status=$(aws_ec2_status $INSTANCE_ID_TEST)
+while [ "$test_status" != "running" ]
+do
+    sleep 5
+	test_status=$(aws_ec2_status $INSTANCE_ID_TEST)
+done
+echo "test is running"
+nexus_status=$(aws_ec2_status $INSTANCE_ID_NEXUS)
+while [ "$nexus_status" != "running" ]
+do
+    sleep 5
+	nexus_status=$(aws_ec2_status $INSTANCE_ID_NEXUS)
+done
+echo "nexus is running"
 
 #Associate IP Elastic to EC2 instance
 aws ec2 associate-address --instance-id $INSTANCE_ID_JENKINS --public-ip $ELASTIC_IP_JENKINS
