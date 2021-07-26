@@ -20,9 +20,9 @@ SET time_zone = "+00:00";
 -- Base de données :  `projet_devops_2021`
 --
 
-CREATE DATABASE IF NOT EXISTS `projet`;
+CREATE DATABASE IF NOT EXISTS `test_creat_projet2a`;
 
-USE `projet`;
+USE `test_creat_projet2a`;
 
 -- --------------------------------------------------------
 
