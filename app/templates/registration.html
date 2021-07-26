@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %} S'enregistrer {% endblock %}
+
+{% block content %}
+
+    <h1> Registration page</h1>
+
+    {% for user in users %}
+
+       nom =  {{ user.nom }}
+
+    {% endfor %}
+
+
+{% endblock %}
