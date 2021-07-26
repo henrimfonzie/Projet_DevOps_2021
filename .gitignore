@@ -3,3 +3,9 @@ aws/keys/
 aws/machines.txt
 aws/Appli-paybook.retry
 aws/pb.txt
+services/__pycache__
+models/__init__.pyc
+models/__pycache__
+__pycache__/*
+*.pyc
+venv/
