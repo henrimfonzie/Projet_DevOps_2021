@@ -14,6 +14,8 @@ def home():
             if user != None:
                 page = "admin" if user.role != 0 else "qcm"
                 return redirect(url_for(page, name = user.nom))
+            else:
+                return redirect(url_for("registration"))
     
     return render_template("home.html")      
 
