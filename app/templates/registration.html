@@ -3,14 +3,27 @@
 {% block title %} S'enregistrer {% endblock %}
 
 {% block content %}
+    <div class="wrapper fadeInDown">
+        <div id="formContent">
+            <!-- Tabs Titles -->
 
-    <h1> Registration page</h1>
+            <!-- Icon -->
+            <div class="fadeIn first">
+                <img src="../static/img/user.svg" id="icon" width="50" height="50" alt="User Icon"/>
+            </div>
 
-    {% for user in users %}
+            <!-- Login Form -->
+            <form method="POST">
+                <input type="text" id="nom" class="fadeIn second" name="nom" placeholder="Nom">
+                <input type="text" id="prenom" class="fadeIn second" name="prenom" placeholder="Prénom">
+                <input type="text" id="email" class="fadeIn second" name="email" placeholder="Email (login)">
+                <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
+                <input type="submit" class="fadeIn fourth" value="Enregistrer">
+            </form>
 
-       nom =  {{ user.nom }}
+        </div>
+    </div>
 
-    {% endfor %}
-
+    <link rel="stylesheet" href="../static/css/home.css">
 
 {% endblock %}

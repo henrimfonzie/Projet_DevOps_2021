@@ -22,10 +22,18 @@ def home():
 @app.route('/registration', methods = ['POST', 'GET'])
 def registration():
     
-    if request.method == 'GET':
-        return render_template("registration.html")
-    elif request.method == 'POST':
-        pass
+    if request.method == 'POST':
+        nom = request.form['nom']
+        prenom = request.form['prenom']
+        email = request.form['email']
+        pwd = request.form['password']
+        
+        if nom and prenom and email and pwd != None:
+            user = Utilisateur(nom=nom, prenom=prenom, mail= email, motdepass=pwd)
+            createUser(user)
+            return redirect(url_for("home"))
+        
+    return render_template("registration.html")
 
 
 
