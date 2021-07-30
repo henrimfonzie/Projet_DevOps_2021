@@ -2,6 +2,7 @@ from flask import render_template, redirect, url_for, request, Flask
 from create_app import app
 from services.connexion import *
 import json
+from flask import session as sess
 
 @app.route('/', methods = ['POST', 'GET'])
 def home():
@@ -12,37 +13,68 @@ def home():
         if (login and pwd) != None:
             user = getUserBtLoginAndPwd(login, pwd)
             if user != None:
-                page = "admin" if user.role != 0 else "qcm"
-                return redirect(url_for(page, name = user.nom))
-    
-    return render_template("home.html")      
+                role = "admin" if user.role != 0 else "user"   
+                sess['user'] = {'id': user.id_user, 'nom' : user.nom, 'prenom' : user.prenom, 'role' : role, 'mail' : user.mail, 'pwd' : user.motdepass}
+                return render_template("navbar.html",user=sess['user']) 
+            else:
+                return redirect(url_for("registration"))
+    else :
+        if "user" in sess :
+            return render_template("navbar.html",user=sess['user']) 
+        return render_template("home.html")      
 
 
+@app.route('/signout')
+def signout():
+    sess.clear()
+    return redirect(url_for("home"))
 
 @app.route('/registration', methods = ['POST', 'GET'])
 def registration():
     
-    if request.method == 'GET':
-        return render_template("registration.html")
-    elif request.method == 'POST':
-        pass
+    if request.method == 'POST':
+        nom = request.form['nom']
+        prenom = request.form['prenom']
+        email = request.form['email']
+        pwd = request.form['password']
+        
+        if nom and prenom and email and pwd != None:
+            user = Utilisateur(nom=nom, prenom=prenom, mail= email, motdepass=pwd)
+            createUser(user)
+            return redirect(url_for("home"))
+        
+    return render_template("registration.html")
 
 
 
-@app.route('/admin/<name>', methods = ['POST', 'GET'])
-def admin(name):
+@app.route('/admin', methods = ['POST', 'GET'])
+def admin():
     
     if request.method == 'GET':
-        return render_template("admin.html", name = name)
+        
+        if "user" in sess:
+            user = sess['user']['nom']
+            return render_template("admin.html", name = user)
     elif request.method == 'POST':
         pass
 
 
 
-@app.route('/qcm/<name>', methods = ['POST', 'GET'])
-def qcm(name):
+@app.route('/qcm', methods = ['POST', 'GET'])
+def qcm():
     
     if request.method == 'GET':
-        return render_template("qcm.html", name = name)
+        if "user" in sess:
+            user = sess['user']
+            return render_template("qcm.html", user = user)
     elif request.method == 'POST':
         pass
+
+
+@app.route('/user')
+def user():
+    if "user_nom" in sess:
+        return render_template("navbar.html")
+    else:
+        return "<h1>user not found</h1>"
+

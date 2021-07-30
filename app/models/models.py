@@ -1,9 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
+import configparser
+
+config = configparser.ConfigParser()
+config.read('data.cfg')
+RDS_URL = "mysql+pymysql://" + config['RDS']['user'] + ":" + config['RDS']['pwd'] + "@" + config['RDS']['host'] + "/" + config['RDS']['bd']
 
 Base = automap_base()
-engine = create_engine('mysql+pymysql://admin:Password123@rdstest2.cz3sp07bq1rp.eu-west-3.rds.amazonaws.com/projet_devops_2021', echo=False)
+engine = create_engine(RDS_URL, echo=False)
 
 Base.prepare(engine, reflect=True)
 
