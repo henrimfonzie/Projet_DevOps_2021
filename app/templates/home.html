@@ -1,0 +1,33 @@
+{% include 'base.html' %}
+
+
+
+{% block content %}
+
+    <div class="wrapper fadeInDown">
+        <div id="formContent">
+            <!-- Tabs Titles -->
+
+            <!-- Icon -->
+            <div class="fadeIn first">
+                <img src="../static/img/user.svg" id="icon" width="50" height="50" alt="User Icon"/>
+            </div>
+
+            <!-- Login Form -->
+            <form method="POST">
+                <input type="text" id="login" class="fadeIn second" name="login" placeholder="login">
+                <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
+                <input type="submit" class="fadeIn fourth" value="Log In">
+            </form>
+
+            <!-- Remind Passowrd -->
+            <div id="formFooter">
+                <a class="underlineHover" href="#">Forgot Password?</a> <br>
+                <a class="underlineHover" href="/registration">Sign up</a>
+            </div>
+
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="../static/css/home.css">
+{% endblock %}
