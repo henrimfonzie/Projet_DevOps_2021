@@ -1,11 +1,19 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link href="../static/css/404.css" rel="stylesheet">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="../static/js/404.js"></script>
+    
 
-<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
-<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<!------ Include the above in your HEAD tag ---------->
+</head>
+<body>
 
-<a href="https://www.ftcab.com" target="_blank">
+<a href="/" target="_blank">
   <div class="container">
   <div class="row">
     <div class="col-sm-12 col-md-12 mt-5 mb-5">
@@ -326,6 +334,4 @@
 </div>
 </a>
 
-
-<div class="ftr">Design by <a href="http://www.csshint.com/" target="_blank">www.csshint.com</a></div>
-
+</body>
