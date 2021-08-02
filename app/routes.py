@@ -51,38 +51,22 @@ def registration():
 
 
 
-@app.route('/admin', methods = ['POST', 'GET'])
-def admin():
-    
-    if request.method == 'GET':
-        
-        if "user" in sess:
-            user = sess['user']
-            if user['role'] == 'admin' :
+@app.route('/createquestion', methods = ['POST', 'GET'])
+def createquestion():
+
+    if "user" in sess:
+        user = sess['user']
+        if user['role'] == 'admin' :    
+            if request.method == 'GET':
+                return render_template("question/ajout.html", user = user)
+
+            else :
                 return render_template("admin.html", name = user)
+
+    else : 
         return render_template("404.html")
-    elif request.method == 'POST':
-        pass
 
 
-
-@app.route('/qcm', methods = ['POST', 'GET'])
-def qcm():
-    
-    if request.method == 'GET':
-        if "user" in sess:
-            user = sess['user']
-            return render_template("qcm.html", user = user)
-    elif request.method == 'POST':
-        pass
-
-
-@app.route('/user')
-def user():
-    if "user_nom" in sess:
-        return render_template("navbar.html")
-    else:
-        return "<h1>user not found</h1>"
 
 @app.errorhandler(404)
 def page_not_found(e):
