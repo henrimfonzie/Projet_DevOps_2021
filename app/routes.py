@@ -37,13 +37,17 @@ def registration():
         prenom = request.form['prenom']
         email = request.form['email']
         pwd = request.form['password']
-        
-        if nom and prenom and email and pwd != None:
-            user = Utilisateur(nom=nom, prenom=prenom, mail= email, motdepass=pwd)
+        role = request.form['role']        
+        if nom and prenom and email and pwd and role != None:
+            user = Utilisateur(nom=nom, prenom=prenom, mail= email, motdepass=pwd, role=role)
             createUser(user)
             return redirect(url_for("home"))
-        
-    return render_template("registration.html")
+    
+    if "user" in sess:
+        user = sess['user']
+        return render_template("registration.html", user = user)
+    else:
+        return render_template("registration.html", user = None)
 
 
 
@@ -53,8 +57,10 @@ def admin():
     if request.method == 'GET':
         
         if "user" in sess:
-            user = sess['user']['nom']
-            return render_template("admin.html", name = user)
+            user = sess['user']
+            if user['role'] == 'admin' :
+                return render_template("admin.html", name = user)
+        return render_template("404.html")
     elif request.method == 'POST':
         pass
 
