@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script></script>
+    
+</head>
+<body>
+  
+  {% if user != None %}
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+      <a class="brand" href="/">Projet Fil Rouge</a>
+      <div class="nav-collapse">
+        <ul class="nav">
+          <li class=""><a href="/">Accueil</a></li>
+          {% if user["role"] == "admin" %}
+          <li class=""><a href="/qcm">Créer un QCM</a></li>
+          <li class=""><a href="/registration">Gerer les utilisateurs</a></li>
+          {% else %}
+            
+          <li class=""><a href="/">Lister les QCM</a></li>
+          <li class=""><a href="/">Historique</a></li>
+            {% endif %}     
+          
+        </ul>    
+            <ul class="nav pull-right">
+          <li class="divider-vertical"></li>
+          <li class="dropdown">
+            <a href="/signout" class="dropdown-toggle" data-toggle="dropdown">Sign out <b class="caret"></b></a>
+          </li>
+        </ul>
+      </div><!-- /.nav-collapse -->
+    </div>
+  </div><!-- /navbar-inner -->
+</div>
+{% endif %}

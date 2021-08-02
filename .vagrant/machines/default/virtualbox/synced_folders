@@ -1,0 +1,1 @@
+{"virtualbox":{"/home/project":{"create":true,"guestpath":"/home/project","hostpath":"C:/Users/ib/Desktop/projet2021/Projet_DevOps_2021/project","disabled":false,"__vagrantfile":true},"/vagrant":{"guestpath":"/vagrant","hostpath":"C:/Users/ib/Desktop/projet2021/Projet_DevOps_2021","disabled":false,"__vagrantfile":true}}}
