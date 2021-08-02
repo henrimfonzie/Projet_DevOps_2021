@@ -84,3 +84,6 @@ def user():
     else:
         return "<h1>user not found</h1>"
 
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
