@@ -93,4 +93,9 @@ mysql -h $endpoint -P $rds_port  -u $admin -p$Password < projet_devops_2021.sql
 . create-infra.sh
 
 # append RDS EndPoint to infra_ID.tx
-echo "RDS_ENDPOINT_ADRESS_TEST:$endpoint" >> infra_ID.txt
+echo "[RDS]
+user = $admin
+pwd = $Password
+host = $endpoint
+bd = $db_name
+" >> infra_ID.txt
