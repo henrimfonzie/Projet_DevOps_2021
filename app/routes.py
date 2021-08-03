@@ -49,8 +49,6 @@ def registration():
     else:
         return render_template("registration.html", user = None)
 
-
-
 @app.route('/createquestion', methods = ['POST', 'GET'])
 def createquestion():
 
@@ -61,13 +59,63 @@ def createquestion():
                 return render_template("question/ajout.html", user = user)
 
             else :
-                return render_template("admin.html", name = user)
+                next_id = nextId("questions")
+                question = request.form['question']
+                nb_propositions = request.form['nb_propositions']        
+                if question and nb_propositions != None:
+                    if RepresentsInt(nb_propositions):
+                        with engine.connect() as con:
+                            rs = con.execute("INSERT INTO `questions` (`question`) VALUES ('" +  question + "');")
+                        next_id = nextId(question)
+                        sess['question'] = {'id': next_id, 'nb' : int(nb_propositions), 'question' : question}
+                        
+                        #return render_template("reponses/ajout.html", user = user, nb = int(nb_propositions))
+                        return redirect(url_for("createreponse"))
 
     else : 
         return render_template("404.html")
 
+@app.route('/createreponse', methods = ['POST', 'GET'])
+def createreponse():
 
+    if "user" in sess and "question" in sess :
+        user = sess['user']
+        question = sess['question']
+
+        if user['role'] == 'admin' :    
+            if request.method == 'GET':
+                return render_template("reponses/ajout.html", user = user, question = question)
+
+            else :
+                sql = ""
+                data= {}
+                for i in range(question["nb"]) :
+                    x="question" + str(i)
+                    if request.form[x] != None :
+
+                        data[i] = request.form[x]
+                        if i !=  question["nb"]-1 :
+                            sql += "('"+str(question['id']) +"','" +data[i]+"',0),"
+                        else :
+                            sql += "('"+str(question['id']) +"','" +data[i]+"',0)"
+
+                    else : 
+                        return render_template("404.html")
+
+                sess.pop('question')
+                with engine.connect() as con:
+                    rs = con.execute("INSERT INTO `reponses` (`id_qst`, `req`, `valeur`) VALUES " + sql + ";")        
+                return redirect(url_for("home"))    
+    else : 
+        return render_template("404.html")
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
+def RepresentsInt(s):
+    try: 
+        int(s)
+        return True
+    except ValueError:
+        return False

@@ -1,0 +1,19 @@
+{% include 'navbar.html'  %}
+
+<div class="wrapper fadeInDown">
+    <div id="formContent">
+        <!-- Tabs Titles -->
+        <!-- Login Form -->
+        <p> {{ question['question'] }}  </p>
+        <p> {{ question['id'] }}  </p>
+        <form method="POST">
+            {% for i in range(question['nb']) %}
+            <input type="radio" id="rep" name="rep" value="{{i}}">
+            <input type="text" id="question{{ i }}" class="fadeIn second" name="question{{ i }}" placeholder="Saisir votre proposition {{ i }} "> <br>
+            {% endfor %}
+
+            <input type="submit" class="fadeIn fourth" value="Valider">
+        </form>
+
+    </div>
+</div>
