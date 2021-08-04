@@ -20,3 +20,9 @@ def nextId(table):
         rs = con.execute(sql)
         for row in rs:
             return row[0]
+
+def getAllQcm():
+    sql = "SELECT * FROM `qcm`;"
+    with engine.connect() as con:
+        rs = con.execute(sql)
+        return rs

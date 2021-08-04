@@ -6,6 +6,7 @@ from flask import session as sess
 
 @app.route('/', methods = ['POST', 'GET'])
 def home():
+    cleanqst()
     if request.method == 'POST':
         login = request.form['login']
         pwd = request.form['password']
@@ -23,15 +24,15 @@ def home():
             return render_template("navbar.html",user=sess['user']) 
         return render_template("home.html")      
 
-
 @app.route('/signout')
 def signout():
+    cleanqst()
     sess.clear()
     return redirect(url_for("home"))
 
 @app.route('/registration', methods = ['POST', 'GET'])
 def registration():
-    
+    cleanqst()
     if request.method == 'POST':
         nom = request.form['nom']
         prenom = request.form['prenom']
@@ -51,7 +52,7 @@ def registration():
 
 @app.route('/createquestion', methods = ['POST', 'GET'])
 def createquestion():
-
+    cleanqst()
     if "user" in sess:
         user = sess['user']
         if user['role'] == 'admin' :    
@@ -76,7 +77,6 @@ def createquestion():
 
 @app.route('/createreponse', methods = ['POST', 'GET'])
 def createreponse():
-
     if "user" in sess and "question" in sess :
         user = sess['user']
         question = sess['question']
@@ -120,9 +120,85 @@ def createreponse():
 def page_not_found(e):
     return render_template('404.html'), 404
 
-def RepresentsInt(s):
-    try: 
-        int(s)
-        return True
-    except ValueError:
-        return False
+@app.route('/GestionQCM', methods = ['GET'])
+def GestionQCM():
+    if "user" in sess :
+        user = sess['user']
+        if user['role'] == 'admin' :    
+            if request.method == 'GET':
+                qcm = getAllQcm()
+                return render_template("qcm/consultation.html", user = user, qcm = qcm)
+        return render_template("404.html")
+    else : 
+        return render_template("404.html")
+
+@app.route('/qcmnewsub', methods = ['POST', 'GET'])
+def qcmnewsub():
+    if "user" in sess :
+        user = sess['user']
+        if user['role'] == 'admin' :    
+            if request.method == 'POST':
+                sujet = request.form['sujet']  
+                if sujet!= None :
+                    with engine.connect() as con:
+                        con.execute("INSERT INTO `qcm` (`sujet`) VALUES ('" +  sujet + "');")
+                    return redirect(url_for('GestionQCM'))
+            return render_template("qcm/ajout.html", user = user)
+
+@app.route('/qcmupdate/<id>', methods = ['GET'])
+def qcmupdate(id):
+    if "user" in sess :
+        user = sess['user']
+        if user['role'] == 'admin' :    
+            if request.method == 'GET':
+                sqlleft = "SELECT * FROM projet_devops_2021.questions A \
+                    LEFT JOIN projet_devops_2021.avoir B ON A.id_question = B.id_qst and B.id_qcm = "+id+"\
+                    WHERE B.id_avoir IS NULL;"
+                sqlinner = "SELECT A.* FROM projet_devops_2021.questions A \
+                    inner JOIN projet_devops_2021.avoir B ON A.id_question = B.id_qst and B.id_qcm = "+id+";"
+                with engine.connect() as con:
+                    left = con.execute(sqlleft)
+                    inner = con.execute(sqlinner)
+                # qcm = getAllQcm()
+                # return render_template("qcm/ajout.html", user = user, qcm = qcm)
+                return render_template("qcm/modification.html", user = user, id = id, left= left, inner = inner)
+    return render_template("404.html")
+
+@app.route('/qcmdel/<id>', methods = ['GET'])
+def qcmdel(id):
+    if "user" in sess :
+        user = sess['user']
+        if user['role'] == 'admin' :    
+            if request.method == 'GET':
+                with engine.connect() as con:
+                    con.execute("DELETE FROM `qcm` WHERE `id_qcm`=" + id + ";")
+                    con.execute("DELETE FROM `avoir` WHERE `id_qcm`=" + id + ";")
+                return redirect(url_for('GestionQCM'))
+
+@app.route('/qcmaddqst/<id>/<idqst>', methods = ['GET'])
+def qcmaddqst(id,idqst):
+    if "user" in sess :
+        user = sess['user']
+        if user['role'] == 'admin' :    
+            if request.method == 'GET':
+                with engine.connect() as con:
+                    con.execute("insert into `avoir` (`id_qcm`,`id_qst`) VALUES (" + id + "," + idqst + ");")
+                return redirect(url_for('qcmupdate', id = id))
+
+@app.route('/qcmdelqst/<id>/<idqst>', methods = ['GET'])
+def qcmdelqst(id,idqst):
+    if "user" in sess :
+        user = sess['user']
+        if user['role'] == 'admin' :    
+            if request.method == 'GET':
+                with engine.connect() as con:
+                    con.execute("DELETE FROM `avoir` where `id_qcm`=" + id + " and `id_qst`=" + idqst + ";")
+                return redirect(url_for('qcmupdate', id = id))
+
+def cleanqst():
+    if "question" in sess :
+        # delQuestion(sess['question']['question'])
+        sql = "DELETE FROM `questions` WHERE `question`='" + sess['question']['question'] + "';"
+        with engine.connect() as con:
+            con.execute(sql)
+        sess.pop('question')

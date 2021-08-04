@@ -26,8 +26,9 @@
         <ul class="nav">
           <li class=""><a href="/">Accueil</a></li>
           {% if user["role"] == "admin" %}
-          <li class=""><a href="/createquestion">Créer un QCM</a></li>
+          <li class=""><a href="/createquestion">Créer une question/reponse</a></li>
           <li class=""><a href="/registration">Gerer les utilisateurs</a></li>
+          <li class=""><a href="/GestionQCM">Gerer les QCMS</a></li>
           {% else %}
             
           <li class=""><a href="/">Lister les QCM</a></li>

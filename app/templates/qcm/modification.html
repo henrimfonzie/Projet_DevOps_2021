@@ -1,0 +1,64 @@
+{% include 'navbar.html'  %}
+
+{% set id_qcm = id | string() %}
+<h2>Question du QCM</h2>
+<div class="well">
+    <table class="table" width=100>
+      <thead>
+        <tr>
+          <th >Question</th>
+          <th>Supprimer</th>
+          <th style="width: 36px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+          
+        {% for q in inner %}
+        {% set id_qst = q['id_question'] | string() %}
+        {% set val = id_qcm + '/' + id_qst %}
+        <tr>
+          <td>{{ q['question'] }}</td>
+          <td><button class="btn" onclick="del(this)" value="{{val}}"><i class="glyphicon glyphicon-pencil"></i>supprimer la question</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+<h2>Question potentielle pour le QCM</h2>
+<div class="well">
+  <table class="table" width=100>
+      <thead>
+        <tr>
+          <th>Question</th>
+          <th>ajouter</th>
+          <th style="width: 36px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+          
+        {% for q in left %}
+        {% set id_qst = q['id_question'] | string() %}
+        {% set val = id_qcm + '/' + id_qst %}
+        <tr>
+          <td>{{ q['question'] }}</td>
+          <td><button class="btn" onclick="add(this)" value="{{val}}"><i class="fa fa-trash"></i>Ajouter la question</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+<script>
+    function add(objButton){  
+        var id = objButton.value;
+        window.location.href = '/qcmaddqst/'.concat(id);
+        // alert('/qcmaddqst/'.concat(id));
+    }
+    function del(objButton){  
+        var id = objButton.value;
+            // alert('/qcmdelqst/'.concat(id));
+        window.location.href = '/qcmdelqst/'.concat(id);
+        
+    }
+</script>
