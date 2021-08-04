@@ -3,6 +3,8 @@ from create_app import app
 from services.connexion import *
 import json
 from flask import session as sess
+from datetime import date
+
 
 @app.route('/', methods = ['POST', 'GET'])
 def home():
@@ -123,14 +125,11 @@ def page_not_found(e):
 @app.route('/GestionQCM', methods = ['GET'])
 def GestionQCM():
     if "user" in sess :
-        user = sess['user']
-        if user['role'] == 'admin' :    
-            if request.method == 'GET':
-                qcm = getAllQcm()
-                return render_template("qcm/consultation.html", user = user, qcm = qcm)
-        return render_template("404.html")
-    else : 
-        return render_template("404.html")
+        user = sess['user']   
+        if request.method == 'GET':
+            qcm = getAllQcm()
+            return render_template("qcm/consultation.html", user = user, qcm = qcm)
+    return render_template("404.html")
 
 @app.route('/qcmnewsub', methods = ['POST', 'GET'])
 def qcmnewsub():
@@ -194,7 +193,40 @@ def qcmdelqst(id,idqst):
                 with engine.connect() as con:
                     con.execute("DELETE FROM `avoir` where `id_qcm`=" + id + " and `id_qst`=" + idqst + ";")
                 return redirect(url_for('qcmupdate', id = id))
-
+                
+@app.route('/passqcm/<id>', methods = ['GET','POST'])
+def passqcm(id):
+    if "user" in sess :
+        user = sess['user']
+        if request.method == 'GET':
+            data = getqstOfQcmByID(id)
+            return render_template('qcm/pass.html', user=user, id=id, data=data)
+        if request.method == 'POST':
+            
+            data = getqstOfQcmByID(id)
+            totalqst=data['rep']
+            totalcorr=0
+            for i in range(data['rep']):
+                print("we got in the loop")
+                try :
+                    id_qst = str(data[i]['id'])
+                    answer = int(request.form[id_qst])
+                    re = engine.connect().execute("SELECT * FROM reponses where id_qst=" + str(id_qst) + " and valeur=1;")
+                    print("la valeur de re :")
+                    for r in re:
+                        corr_answer = int(r['id_reponse'])
+                    if answer==corr_answer:
+                        totalcorr +=1
+                except KeyError as inst :
+                    print("error")
+                    print(inst.args)     # arguments stored in .args
+                    print(inst)
+            score=(totalcorr/totalqst)*100
+            today = date.today()
+            engine.connect().execute("INSERT INTO `historique` (`id_user`,`id_qcm`,`score`,`date`) VALUES \
+                (" +  str(user['id']) + ", "+ str(id) +", "+ str(score) +", '"+ str(today) +"');")
+            return render_template('qcm/score.html',  user=user, score=score)
+    return render_template('404.html')
 def cleanqst():
     if "question" in sess :
         # delQuestion(sess['question']['question'])
@@ -202,3 +234,28 @@ def cleanqst():
         with engine.connect() as con:
             con.execute(sql)
         sess.pop('question')
+
+def getqstOfQcmByID(id):
+    with engine.connect() as con:
+        data = {}
+        questions = con.execute("SELECT a.* FROM questions a inner join avoir B where a.id_question = B.id_qst and B.id_qcm="+id+";")
+        j=0
+        for qst in questions:
+            tmp={}
+            tmp['id']=qst['id_question']
+            tmp['qst']=qst['question']
+            tmp['rep']={}
+            i = 0
+            reponses = con.execute("SELECT * FROM projet_devops_2021.reponses where id_qst=" + str(qst['id_question']) + ";")
+            for rep in reponses:
+                tmp2={}
+                tmp2['req']=rep['req']
+                tmp2['valeur']=rep['valeur']
+                tmp2['id']=rep['id_reponse']
+                tmp['rep'][i] = tmp2
+                i+=1
+            tmp['nb_rep']=i
+            data[j]=tmp
+            j+=1
+        data['rep']=j
+        return data
