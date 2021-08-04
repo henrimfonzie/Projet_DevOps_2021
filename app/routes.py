@@ -59,18 +59,17 @@ def createquestion():
                 return render_template("question/ajout.html", user = user)
 
             else :
-                next_id = nextId("questions")
                 question = request.form['question']
                 nb_propositions = request.form['nb_propositions']        
-                if question and nb_propositions != None:
-                    if RepresentsInt(nb_propositions):
-                        with engine.connect() as con:
-                            rs = con.execute("INSERT INTO `questions` (`question`) VALUES ('" +  question + "');")
-                        next_id = nextId(question)
-                        sess['question'] = {'id': next_id, 'nb' : int(nb_propositions), 'question' : question}
+                if question and nb_propositions != None and  question and nb_propositions != "" :
+                    with engine.connect() as con:
+                        con.execute("INSERT INTO `questions` (`question`) VALUES ('" +  question + "');")
+                    next_id = nextId(question)
+                    sess['question'] = {'id': next_id, 'nb' : int(nb_propositions), 'question' : question}
                         
                         #return render_template("reponses/ajout.html", user = user, nb = int(nb_propositions))
-                        return redirect(url_for("createreponse"))
+                    return redirect(url_for("createreponse")) 
+                return render_template("question/ajout.html", user = user)
 
     else : 
         return render_template("404.html")
@@ -91,16 +90,24 @@ def createreponse():
                 data= {}
                 for i in range(question["nb"]) :
                     x="question" + str(i)
-                    if request.form[x] != None :
-
-                        data[i] = request.form[x]
-                        if i !=  question["nb"]-1 :
-                            sql += "('"+str(question['id']) +"','" +data[i]+"',0),"
+                    try:
+                        correct = request.form['rep']  
+                        data[i] = request.form[x] 
+                        if  data[i] :
+                            if i !=  question["nb"]-1 :
+                                if int(correct) == i :
+                                    sql += "('"+str(question['id']) +"','" +data[i]+"',1),"
+                                else :
+                                    sql += "('"+str(question['id']) +"','" +data[i]+"',0),"
+                            else :
+                                if int(correct) == i :
+                                    sql += "('"+str(question['id']) +"','" +data[i]+"',1)"
+                                else :
+                                    sql += "('"+str(question['id']) +"','" +data[i]+"',0)"
                         else :
-                            sql += "('"+str(question['id']) +"','" +data[i]+"',0)"
-
-                    else : 
-                        return render_template("404.html")
+                            return render_template("reponses/ajout.html", user = user, question = question)
+                    except KeyError : 
+                        return render_template("reponses/ajout.html", user = user, question = question)
 
                 sess.pop('question')
                 with engine.connect() as con:
