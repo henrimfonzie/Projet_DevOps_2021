@@ -171,8 +171,8 @@ def qcmdel(id):
         if user['role'] == 'admin' :    
             if request.method == 'GET':
                 with engine.connect() as con:
-                    con.execute("DELETE FROM `qcm` WHERE `id_qcm`=" + id + ";")
                     con.execute("DELETE FROM `avoir` WHERE `id_qcm`=" + id + ";")
+                    con.execute("DELETE FROM `qcm` WHERE `id_qcm`=" + id + ";")
                 return redirect(url_for('GestionQCM'))
 
 @app.route('/qcmaddqst/<id>/<idqst>', methods = ['GET'])
