@@ -21,15 +21,17 @@
                 }
                 else {
                     var value = Number(empt2);
-                    
-                    if (Math.floor(value) == value) {
-                        if(Math.sign(value)!=1){
-                            alert("nombre de strictement suppérieur à 0 ?");
+                    if(value<2 || value>5){
+                        alert("Les propositions doit être un entier compris entre 2 et 5 !");
+                        document.getElementById("nb_propositions").value = "";
+                    }else{
+                        if (Math.floor(value) == value) {
+                            if(Math.sign(value)!=1){
+                            }
+                        }else {
+                            alert("Les propositions doit être un entier compris entre 2 et 5 !");
                             document.getElementById("nb_propositions").value = "";
                         }
-                    }else {
-                        alert("nombre de proposition doit être un entier ?");
-                        document.getElementById("nb_propositions").value = "";
                     }
                 }
             }
