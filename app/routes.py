@@ -1,10 +1,8 @@
 from flask import render_template, redirect, url_for, request, Flask
 from create_app import app
 from services.connexion import *
-import json
 from flask import session as sess
 from datetime import date
-
 
 @app.route('/', methods = ['POST', 'GET'])
 def home():
@@ -150,11 +148,11 @@ def qcmupdate(id):
         user = sess['user']
         if user['role'] == 'admin' :    
             if request.method == 'GET':
-                sqlleft = "SELECT * FROM projet_devops_2021.questions A \
-                    LEFT JOIN projet_devops_2021.avoir B ON A.id_question = B.id_qst and B.id_qcm = "+id+"\
+                sqlleft = "SELECT * FROM questions A \
+                    LEFT JOIN avoir B ON A.id_question = B.id_qst and B.id_qcm = "+id+"\
                     WHERE B.id_avoir IS NULL;"
-                sqlinner = "SELECT A.* FROM projet_devops_2021.questions A \
-                    inner JOIN projet_devops_2021.avoir B ON A.id_question = B.id_qst and B.id_qcm = "+id+";"
+                sqlinner = "SELECT A.* FROM questions A \
+                    inner JOIN avoir B ON A.id_question = B.id_qst and B.id_qcm = "+id+";"
                 with engine.connect() as con:
                     left = con.execute(sqlleft)
                     inner = con.execute(sqlinner)
@@ -221,12 +219,22 @@ def passqcm(id):
                     print("error")
                     print(inst.args)     # arguments stored in .args
                     print(inst)
-            score=(totalcorr/totalqst)*100
+            score="%.2f" %((totalcorr/totalqst)*100)
             today = date.today()
             engine.connect().execute("INSERT INTO `historique` (`id_user`,`id_qcm`,`score`,`date`) VALUES \
                 (" +  str(user['id']) + ", "+ str(id) +", "+ str(score) +", '"+ str(today) +"');")
             return render_template('qcm/score.html',  user=user, score=score)
     return render_template('404.html')
+
+@app.route('/historique', methods = ['GET'])
+def historique():
+    if "user" in sess :
+        user = sess['user']
+        if request.method == 'GET':
+            data = getHistory()
+            return render_template('historique/consultation.html', user=user, data=data)
+    return render_template('404.html')
+
 def cleanqst():
     if "question" in sess :
         # delQuestion(sess['question']['question'])
@@ -234,6 +242,19 @@ def cleanqst():
         with engine.connect() as con:
             con.execute(sql)
         sess.pop('question')
+
+def getHistory():
+    user=sess['user']
+    sql="SELECT a.*, b.sujet FROM historique a inner join qcm b on a.id_qcm=b.id_qcm where id_user="+str(user['id'])+";"
+    rs = engine.connect().execute(sql)
+    data={}
+    i=0
+    for histo in rs:
+        tmp={'qcm':histo['id_qcm'], 'sujet':histo['sujet'], 'score':histo['score'],'date':histo['date'] }
+        data[i]= tmp
+        i+=1
+    data['len']=i
+    return data
 
 def getqstOfQcmByID(id):
     with engine.connect() as con:
@@ -246,7 +267,7 @@ def getqstOfQcmByID(id):
             tmp['qst']=qst['question']
             tmp['rep']={}
             i = 0
-            reponses = con.execute("SELECT * FROM projet_devops_2021.reponses where id_qst=" + str(qst['id_question']) + ";")
+            reponses = con.execute("SELECT * FROM reponses where id_qst=" + str(qst['id_question']) + ";")
             for rep in reponses:
                 tmp2={}
                 tmp2['req']=rep['req']

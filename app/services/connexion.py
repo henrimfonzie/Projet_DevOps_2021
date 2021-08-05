@@ -1,11 +1,6 @@
 from sqlalchemy.orm import session
 from models.models import *
 
-import configparser
-
-config = configparser.ConfigParser()
-config.read('data.cfg')
-
 def getUserBtLoginAndPwd(login, pwd):
     return session.query(Utilisateur).filter_by(mail = login, motdepass = pwd).first()
 
