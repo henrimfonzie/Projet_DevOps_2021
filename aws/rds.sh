@@ -8,12 +8,17 @@ Ava_Zone="us-east-1b"
 DbName="DB_Equipe_1_TEST"
 SUBNET_RDS_a=$AWS_REGION"a"
 SUBNET_RDS_b=$AWS_REGION"b"
+# rds PROD
 admin="admin"
 Password="Password123"
-Class_dev_test="db.r5.large"
 Class_prod="db.r5.xlarge"
-identif_dev_test="RDSTEST2"
 identif_prod="RDSPROD"
+# RDS TEST
+admin_test="admin_test"
+Password_test="Password"
+Class_dev_test="db.r5.large"
+identif_dev_test="RDSTEST2"
+
 rds_port="3306"
 db_name="projet_devops_2021"
 VPC_DEF_ID="vpc-13153e7a"
@@ -56,19 +61,28 @@ DBSUBNET_GROUP=$(aws rds create-db-subnet-group \
         --output text --query 'DBSubnetGroup[0].Subnets.{SubnetIdentifier:SubnetIdentifier}' )
 
 
-# RDS - MySQL Instance
+# RDS_TEST - MySQL Instance
 aws rds create-db-instance --allocated-storage 10 \
 	--db-instance-class $Class_dev_test \
 	--db-instance-identifier $identif_dev_test \
 	--publicly-accessible  \
 	--engine "mysql" --availability-zone $SUBNET_RDS_b \
     --vpc-security-group-ids "$dbSecGrpID" \
+	--port $rds_port --db-name $db_name --master-username $admin_test \
+	--master-user-password $Password_test
+
+# RDS_PROD - MySQL Instance
+aws rds create-db-instance --allocated-storage 10 \
+	--db-instance-class $Class_prod \
+	--db-instance-identifier $identif_prod \
+	--publicly-accessible  \
+	--engine "mysql" --availability-zone $SUBNET_RDS_b \
+    --vpc-security-group-ids "$dbSecGrpID" \
 	--port $rds_port --db-name $db_name --master-username $admin \
 	--master-user-password $Password
 
-
 # Waiting RDS to be status available, showing progess state
-echo "RDS Status :" 
+echo "RDS_TEST Status :" 
 status=$(aws rds describe-db-instances --db-instance-identifier $identif_dev_test --output text --query 'DBInstances[0].DBInstanceStatus')
 tmp=""
 while [ "$status" != "available" ]
@@ -78,24 +92,44 @@ do
         tmp=$status
         echo "$tmp ..."
     fi
-    sleep 5
+    sleep 2
     status=$(aws rds describe-db-instances --db-instance-identifier $identif_dev_test --output text --query 'DBInstances[0].DBInstanceStatus')
 done
-echo "RDS is available!" 
+echo "RDS_TEST is available!" 
 
+echo "RDS_PROD Status :" 
+status=$(aws rds describe-db-instances --db-instance-identifier $identif_prod --output text --query 'DBInstances[0].DBInstanceStatus')
+tmp=""
+while [ "$status" != "available" ]
+do
+    if [ "$status" != "$tmp" ]
+    then
+        tmp=$status
+        echo "$tmp ..."
+    fi
+    sleep 2
+    status=$(aws rds describe-db-instances --db-instance-identifier $identif_prod --output text --query 'DBInstances[0].DBInstanceStatus')
+done
+echo "RDS_PROD is available!" 
 # get RDS EndPoint
-endpoint=$(aws rds describe-db-instances --db-instance-identifier $identif_dev_test --output text --query 'DBInstances[0].Endpoint.{Address:Address}')
+endpoint_prod=$(aws rds describe-db-instances --db-instance-identifier $identif_prod --output text --query 'DBInstances[0].Endpoint.{Address:Address}')
+endpoint_test=$(aws rds describe-db-instances --db-instance-identifier $identif_dev_test --output text --query 'DBInstances[0].Endpoint.{Address:Address}')
 
 # exec SQL scipt on RDS DB
-mysql -h $endpoint -P $rds_port  -u $admin -p$Password < projet_devops_2021.sql
+mysql -h $endpoint_prod -P $rds_port  -u $admin -p$Password < projet_devops_2021.sql
+mysql -h $endpoint_test -P $rds_port  -u $admin_test -p$Password_test < projet_devops_2021.sql
 
 # exec du script de creation VPC et EC2 instances
 . create-infra.sh
 
 # append RDS EndPoint to infra_ID.tx
-echo "[RDS]
+echo "[TEST]
+user = $admin_test
+pwd = $Password_test
+host = $endpoint_test
+bd = $db_name
+[PROD]
 user = $admin
 pwd = $Password
-host = $endpoint
-bd = $db_name
-" >> infra_ID.txt
+host = $endpoint_prod
+bd = $db_name" >> infra_ID.txt

@@ -1,4 +1,5 @@
 from flask import render_template, redirect, url_for, request, Flask
+from flask.wrappers import Response
 from create_app import app
 from services.connexion import *
 from flask import session as sess
@@ -160,7 +161,8 @@ def qcmupdate(id):
                 # return render_template("qcm/ajout.html", user = user, qcm = qcm)
                 return render_template("qcm/modification.html", user = user, id = id, left= left, inner = inner)
     return render_template("404.html")
-
+# supprime un qcm existant
+# en supprimant d'abord les relation dans la table avoir
 @app.route('/qcmdel/<id>', methods = ['GET'])
 def qcmdel(id):
     if "user" in sess :
@@ -172,6 +174,10 @@ def qcmdel(id):
                     con.execute("DELETE FROM `qcm` WHERE `id_qcm`=" + id + ";")
                 return redirect(url_for('GestionQCM'))
 
+# la table avoir permet d'exprimer une relation n n entre la table qcm et question
+# 1 qcm peut avoir plusieur qst
+# et 1 qst peut appartenir a plusieur qcm
+# qcmaddqst et qcmdelqst permettent d'alimenter la table avoir (en ajout ou supprimant des relations)
 @app.route('/qcmaddqst/<id>/<idqst>', methods = ['GET'])
 def qcmaddqst(id,idqst):
     if "user" in sess :
@@ -200,17 +206,21 @@ def passqcm(id):
             data = getqstOfQcmByID(id)
             return render_template('qcm/pass.html', user=user, id=id, data=data)
         if request.method == 'POST':
-            
             data = getqstOfQcmByID(id)
             totalqst=data['rep']
             totalcorr=0
             for i in range(data['rep']):
-                print("we got in the loop")
+                # le try catch permet d'evite l'erreur keyError dans le cas ou une question non repondu
                 try :
+                    # chaque question se comporte d'un groupe de radio pour les reponse
+                    # les radios associé a une question comme id et le nom l'id de leur question
+                    # la boucle sur les question permet de recupere l'id question et par la meme occas l'id et nom de la request.form 
+                    # afin d'avoir la valeur de la reponse saisie ==> var answer
                     id_qst = str(data[i]['id'])
                     answer = int(request.form[id_qst])
+                    # lors de la création qst reponse, la bonne reponse (et unique) a eu la valeur 1 
+                    # requete sur table reponse avec id qst et valeur ==> ligne attendu ==> 1 ==> reponse correct
                     re = engine.connect().execute("SELECT * FROM reponses where id_qst=" + str(id_qst) + " and valeur=1;")
-                    print("la valeur de re :")
                     for r in re:
                         corr_answer = int(r['id_reponse'])
                     if answer==corr_answer:
@@ -221,6 +231,7 @@ def passqcm(id):
                     print(inst)
             score="%.2f" %((totalcorr/totalqst)*100)
             today = date.today()
+            # ajout a la fin du traitement les donnée dans la table historique
             engine.connect().execute("INSERT INTO `historique` (`id_user`,`id_qcm`,`score`,`date`) VALUES \
                 (" +  str(user['id']) + ", "+ str(id) +", "+ str(score) +", '"+ str(today) +"');")
             return render_template('qcm/score.html',  user=user, score=score)
@@ -234,7 +245,9 @@ def historique():
             data = getHistory()
             return render_template('historique/consultation.html', user=user, data=data)
     return render_template('404.html')
-
+# annule la création de question si l'utilisateur ne part pas au bout
+# la question est enregistrer dans une var session et supprimer après la création de reponses associé
+# au chargement de chaque page admin, lancement de la fct qui libere la var session et supprime de la DB
 def cleanqst():
     if "question" in sess :
         # delQuestion(sess['question']['question'])
@@ -243,6 +256,14 @@ def cleanqst():
             con.execute(sql)
         sess.pop('question')
 
+# return un dictionnaire comportant l'ensemble des info sur les qcm enregistrer en historique
+# {
+#     0 :{'qcm':histo['id_qcm'], 'sujet':histo['sujet'], 'score':histo['score'],'date':histo['date'] }
+#     1 : { ... }
+#     ...
+#     n : { ... }
+#     len : n
+# }
 def getHistory():
     user=sess['user']
     sql="SELECT a.*, b.sujet FROM historique a inner join qcm b on a.id_qcm=b.id_qcm where id_user="+str(user['id'])+";"
@@ -256,6 +277,29 @@ def getHistory():
     data['len']=i
     return data
 
+
+# return un dictionnaire comportant l'ensemble de qst/reponse pour un qcm passé en param
+# {
+#     0:{
+#         id:id de la question,
+#         qst: la Questions
+#         rep:{
+#             0 : {
+#                 id: id de  la Response
+#                 req: la reponse text
+#                 valeur : 0 si faux 1 si correct
+#                 }
+#             1 : { ... }
+#             ...
+#             n : {... }
+#             nb_rep : i
+#             }
+#         }
+#     1 : {...}
+#     ...
+#     n : {...}
+#     rep : j
+# }
 def getqstOfQcmByID(id):
     with engine.connect() as con:
         data = {}
