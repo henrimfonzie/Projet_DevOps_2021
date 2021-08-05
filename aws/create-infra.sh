@@ -216,35 +216,35 @@ echo "Waiting for EC2 start ..."
 jenkins_status=$(aws_ec2_status $INSTANCE_ID_JENKINS)
 while [ "$jenkins_status" != "running" ]
 do
-    sleep 5
+    sleep 2
 	jenkins_status=$(aws_ec2_status $INSTANCE_ID_JENKINS)
 done
 echo "jenkins is running"
 dev_status=$(aws_ec2_status $INSTANCE_ID_DEV)
 while [ "$dev_status" != "running" ]
 do
-    sleep 5
+    sleep 2
 	dev_status=$(aws_ec2_status $INSTANCE_ID_DEV)
 done
 echo "dev is running"
 prod_status=$(aws_ec2_status $INSTANCE_ID_PROD)
 while [ "$prod_status" != "running" ]
 do
-    sleep 5
+    sleep 2
 	prod_status=$(aws_ec2_status $INSTANCE_ID_PROD)
 done
 echo "prod is running"
 test_status=$(aws_ec2_status $INSTANCE_ID_TEST)
 while [ "$test_status" != "running" ]
 do
-    sleep 5
+    sleep 2
 	test_status=$(aws_ec2_status $INSTANCE_ID_TEST)
 done
 echo "test is running"
 nexus_status=$(aws_ec2_status $INSTANCE_ID_NEXUS)
 while [ "$nexus_status" != "running" ]
 do
-    sleep 5
+    sleep 2
 	nexus_status=$(aws_ec2_status $INSTANCE_ID_NEXUS)
 done
 echo "nexus is running"
@@ -296,7 +296,10 @@ ssh -i $KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS "ssh-keyscan -H $E
 
 
 #generation fichier infra (données relatifs aux composants créé)
-echo "[reseau]
+echo "[ENV]
+# name = TEST
+name = PROD
+[reseau]
 VPC_ID = $VPC_ID
 SUBNET_PUBLIC_ID = $SUBNET_PUBLIC_ID
 SUBNET_PRIVATE_ID = $SUBNET_PRIVATE_ID
@@ -328,12 +331,12 @@ then
 fi
 mv *.pem keys/
 
-# 3 boucle while l'install Ansible, Jenkins & nexus not finished il fait un sleep de 5sec
+# 3 boucle while l'install Ansible, Jenkins & nexus not finished il fait un sleep de 2sec
 echo "Getting Jenkins Password ..."
 JENKINS_KEY=""
 while [ "$JENKINS_KEY" == "" ]
 do
-    sleep 5
+    sleep 2
     JENKINS_KEY=$(ssh -i ./keys/$KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS 'sudo cat /var/lib/jenkins/secrets/initialAdminPassword' 2> /dev/null)
 done
 echo "Jenkins URL : http://$ELASTIC_IP_JENKINS:8080"
@@ -343,7 +346,7 @@ NEXUS_KEY=""
 echo "Getting Nexus Password ..."
 while [ "$NEXUS_KEY" == "" ]
 do
-    sleep 5
+    sleep 2
     NEXUS_KEY=$(ssh -i ./keys/$KEY_NAME"_"$ENV_NEXUS".pem" ubuntu@$ELASTIC_IP_NEXUS 'sudo cat /opt/nexus/sonatype-work/nexus3/admin.password' 2> /dev/null)
 done
 echo "Nexus URL : http://$ELASTIC_IP_NEXUS:8081"
@@ -353,7 +356,7 @@ echo "Getting Ansible ready ..."
 whichAnsible=""
 while [ "$whichAnsible" == "" ]
 do
-    sleep 5
+    sleep 2
     whichAnsible=$(ssh -i ./keys/$KEY_NAME"_"$ENV_JENK".pem" ubuntu@$ELASTIC_IP_JENKINS 'which ansible-playbook')
 done
 # run playbook ansible
