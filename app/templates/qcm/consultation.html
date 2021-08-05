@@ -1,0 +1,60 @@
+{% include 'navbar.html'  %}
+{% if user["role"] == "admin" %}
+<div class="btn-toolbar">
+    <button onclick="newsub()" class="btn btn-primary" value="test">Créer un sujet</button>
+    <!-- <button class="btn">Import</button>
+    <button class="btn">Export</button> -->
+</div>
+{% endif %}
+<div class="well">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sujet</th>
+          
+          {% if user["role"] == "admin" %}
+          <th>Modifier</th>
+          <th>Supprimer</th>
+          {% endif %}
+          <th>Passer</th>
+          <th style="width: 36px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+          
+        {% for q in qcm %}
+        <tr>
+          <td>{{ q['sujet'] }}</td>
+          
+          {% if user["role"] == "admin" %}
+          <td><button class="btn" onclick="update(this)" value="{{q['id_qcm']}}"><i class="fa fa-trash"></i>modifier l'element</button></td>
+          <td><button class="btn" onclick="del(this)" value="{{q['id_qcm']}}"><i class="glyphicon glyphicon-pencil"></i>supprimer l'element</button></td>
+          
+          {% endif %}
+          <td><button class="btn" onclick="pass(this)" value="{{q['id_qcm']}}"><i class="glyphicon glyphicon-pencil"></i>passer l'element</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+
+<script>
+    function newsub(){
+        window.location.href = '/qcmnewsub';
+    }
+    function update(objButton){  
+        var id = objButton.value;
+        window.location.href = '/qcmupdate/'.concat(id);
+    }
+    function pass(objButton){  
+        var id = objButton.value;
+        window.location.href = '/passqcm/'.concat(id);
+    }
+    function del(objButton){  
+        var id = objButton.value;
+        if (confirm('Etre vous sûre de vouloir supprimer ce QCM ?')) {
+            window.location.href = '/qcmdel/'.concat(id);
+        }
+    }
+</script>

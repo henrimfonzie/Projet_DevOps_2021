@@ -1,0 +1,39 @@
+{% include 'navbar.html'  %}
+
+<div class="wrapper fadeInDown">
+    <div id="formContent">
+        <!-- Tabs Titles -->
+        <!-- Login Form -->
+        <form name="form1" method="POST" onsubmit="required()">
+            <input type="text" id="question" class="fadeIn second" name="question" placeholder="Saisir votre Question..."> <br>
+            <input type="text" id="nb_propositions" class="fadeIn third" name="nb_propositions" placeholder="nombre de propositions"> <br>
+            <input type="submit" class="fadeIn fourth" value="Valider">
+        </form>
+        <script>
+            function required()            {
+            var empt = document.forms["form1"]["question"].value;
+                if (empt == "")            {
+                    alert("Veillez saisir votre question");
+                }
+                var empt2 = document.forms["form1"]["nb_propositions"].value;
+                if (empt2 == "")            {
+                    alert("combien de proposition vous souhaitez saisir ?");
+                }
+                else {
+                    var value = Number(empt2);
+                    
+                    if (Math.floor(value) == value) {
+                        if(Math.sign(value)!=1){
+                            alert("nombre de strictement suppérieur à 0 ?");
+                            document.getElementById("nb_propositions").value = "";
+                        }
+                    }else {
+                        alert("nombre de proposition doit être un entier ?");
+                        document.getElementById("nb_propositions").value = "";
+                    }
+                }
+            }
+    
+        </script>
+    </div>
+</div>

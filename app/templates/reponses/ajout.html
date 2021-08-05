@@ -1,0 +1,35 @@
+{% include 'navbar.html'  %}
+
+<div class="wrapper fadeInDown">
+    <div id="formContent">
+        <!-- Tabs Titles -->
+        <!-- Login Form -->
+        <p> {{ question['question'] }} <p id="loopjs" hidden>{{question['nb']}}</label>  </p>
+        <form name="form1" method="POST" onsubmit="required()">
+            {% for i in range(question['nb']) %}
+            <input type="radio" id="rep" name="rep" value="{{i}}">
+            <input type="text" id="question{{ i }}" class="fadeIn second" name="question{{ i }}" placeholder="Saisir votre proposition {{ i+1 }} "> <br>
+            {% endfor %}
+
+            <input type="submit" class="fadeIn fourth" value="Valider">
+        </form>
+
+    </div>
+    <script>
+        function required(){
+            var nbrep = Number(document.getElementById('loopjs').textContent);
+            // alert(document.getElementById('rep').value);
+            for (let pas = 0; pas < nbrep; pas++) {
+                var empt = document.forms["form1"]["question"+pas].value;
+                if (empt == ""){
+                    var prop = pas+1
+                    alert("Veillez saisir la proposition " + prop);
+                    document.getElementById("question"+pas).value = "";
+                }
+            }
+            if ($('input[name=rep]:checked').length <= 0) {
+                alert("Veillez selectionner la bonne proposition !");
+            }
+        }
+    </script>
+</div>
