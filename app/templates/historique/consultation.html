@@ -1,0 +1,35 @@
+{% include 'navbar.html'  %}
+
+<div class="well">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sujet</th>
+          <th>Score</th>
+          <th>Date</th>
+          <th>Repasser</th>
+          <th style="width: 36px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+          
+        {% for i in range(data['len']) %}
+        {% set q = data[i] %}
+        <tr>
+          <td>{{ q['sujet'] }}</td>
+          <td>{{ q['score'] }}</td>
+          <td>{{ q['date'] }}</td>
+          <td><button class="btn" onclick="repass(this)" value="{{q['qcm']}}"><i class="glyphicon glyphicon-pencil"></i>Repasser le QCM</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+
+<script>
+    function repass(objButton){  
+        var id = objButton.value;
+        window.location.href = '/passqcm/'.concat(id);
+    }
+</script>

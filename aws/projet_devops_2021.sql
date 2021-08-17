@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `historique` (
   `id_hist` int(11) NOT NULL AUTO_INCREMENT,
   `id_user` int(11) NOT NULL,
   `id_qcm` int(11) NOT NULL,
-  `score` int(11) DEFAULT NULL,
+  `score` float DEFAULT NULL,
   `date` date DEFAULT NULL,
   PRIMARY KEY (`id_hist`),
   KEY `id_qcm` (`id_qcm`)

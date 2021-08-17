@@ -15,7 +15,7 @@
       shell: apt install python3 python3-pip python3-dev -y
 
     - name: install Flask
-      shell: pip3 install flask
+      shell: pip3 install flask sqlalchemy pymysql
 
     - name: python versions
       shell: "python3 --version"

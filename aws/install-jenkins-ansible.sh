@@ -11,6 +11,8 @@ sudo apt update -y
 ## Installer le pré-requis Java 
 sudo apt -y install openjdk-11-jdk
  
+sudo mkdir -p /home/ubuntu/ansible
+sudo chown ubuntu:ubuntu /home/ubuntu/ansible
 ## Installer la version stable de Jenkins et ses prérequis en suivant la documentation officielle : https://www.jenkins.io/doc/book/installing/linux
 wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
 sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > \

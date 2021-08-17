@@ -26,13 +26,13 @@
         <ul class="nav">
           <li class=""><a href="/">Accueil</a></li>
           {% if user["role"] == "admin" %}
-          <li class=""><a href="/qcm">Créer un QCM</a></li>
+          <li class=""><a href="/createquestion">Créer une question/reponse</a></li>
           <li class=""><a href="/registration">Gerer les utilisateurs</a></li>
+          <li class=""><a href="/GestionQCM">Gerer les QCMS</a></li>
           {% else %}
-            
-          <li class=""><a href="/">Lister les QCM</a></li>
-          <li class=""><a href="/">Historique</a></li>
+          <li class=""><a href="/GestionQCM">Lister les QCM</a></li>
             {% endif %}     
+          <li class=""><a href="/historique">Historique</a></li>
           
         </ul>    
             <ul class="nav pull-right">
