@@ -46,7 +46,7 @@ h2 {
   border-radius: 10px 10px 10px 10px;
   background: #fff;
   padding: 30px;
-  width: 90%;
+  width: 100%;
   max-width: 450px;
   position: relative;
   padding: 0px;
@@ -259,4 +259,27 @@ input[type=text]:placeholder, input[type=password]:placeholder {
 
 #icon {
   width:60%;
+}
+
+
+#popup_create{
+  position: absolute;
+  top: 20%;
+  left: 35%;
+  width: 50%;
+}
+
+.row_close_create{
+  text-align:  right;
+  height: 50px;
+}
+
+#closeCreate{
+  margin: 10px;
+  border-radius: 5px;
+  border: #cccccc;
+}
+
+.popup > div#formContent{
+  max-width: 500px;
 }
