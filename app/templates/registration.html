@@ -1,12 +1,55 @@
 {% include 'navbar.html'  %}
 
-    <div class="wrapper fadeInDown">
+    
+
+<div class="container fluid">
+    <div class="row">
+        <table class="table head center">
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Nom</th>
+                <th scope="col">Prénom</th>
+                <th scope="col">Role</th>
+                <th scope="col">E-mail</th>
+                <th scope="col">Modifier</th>
+                <th scope="col">Supprimer</th>
+            </tr>
+            
+            {% for user in users %}
+                <tr id="members-repeat-container">
+                    <td>{{ user.id_user }}</td>
+                    <td>{{ user.nom }}</td>
+                    <td>{{ user.prenom }}</td>
+                    <td>{% if user.role == 1 %} 
+                            ADMIN 
+                        {% else %}
+                            USER
+                        {% endif %}
+                    </td>
+                    <td>{{ user.mail }}</td>
+                    <td> <button id="modifier_{{ user.id_user }}" onClick="javascript:modifier({{ user.id_user }})" class="alert-warning">modifier</button></td>
+                    <td><button id="supprimer_{{ user.id_user }}" onClick="javascript:supprimer({{ user.id_user }})" class="alert-danger">supprimer</button></td>
+                </tr>
+            {% endfor %}
+        </table>   
+    </div>
+
+    <div class="row">
+        <input type="button" id="openCreate" onClick="javascript:openCreate()" class="btn-info" value="Ajouter">
+    </div>
+    
+
+    <div class="wrapper fadeInDown popup" id ="popup_create"style="display:none">
         <div id="formContent">
             <!-- Tabs Titles -->
-
-            <!-- Icon -->
-            <div class="fadeIn first">
-                <img src="../static/img/user.svg" id="icon" />
+                    
+            <div class="row row_close_create">
+                <button id="closeCreate" onClick="javascript:closePopup()" class="btn-close">close</button>
+            </div>
+            
+                <!-- Icon -->
+            <div class="fadeIn first2">
+                <img src="../static/img/registration.png" id="icon" />
             </div>
 
             <!-- Login Form -->
@@ -33,5 +76,33 @@
             {% endif %}
         </div>
     </div>
+    
+</div>
 
-    <link rel="stylesheet" href="../static/css/home.css">
+
+<script>
+    function openCreate() {
+        var element = document.getElementById("popup_create");
+        element.style.display = "block";
+    }
+
+    function closePopup() {
+        var element = document.getElementById("popup_create");
+        element.style.display = "none";
+    }
+
+    function modifier(id) {
+       alert("modifier : id = " + id);
+    }
+
+    function supprimer(id) {
+        alert("supprimer : id = " + id);
+    }
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="../static/css/home.css">

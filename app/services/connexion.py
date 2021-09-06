@@ -21,3 +21,6 @@ def getAllQcm():
     with engine.connect() as con:
         rs = con.execute(sql)
         return rs
+    
+def getUsers():
+   return session.query(Utilisateur).all()

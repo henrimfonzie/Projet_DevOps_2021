@@ -47,9 +47,10 @@ def registration():
     
     if "user" in sess:
         user = sess['user']
-        return render_template("registration.html", user = user)
+        users = getUsers()
+        return render_template("registration.html", user = user, users = users)
     else:
-        return render_template("registration.html", user = None)
+        return render_template("registration.html",user = None, users = [])
 
 @app.route('/createquestion', methods = ['POST', 'GET'])
 def createquestion():
