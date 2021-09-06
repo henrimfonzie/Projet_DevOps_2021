@@ -1,0 +1,30 @@
+{% include 'navbar.html'  %}
+
+    <div class="wrapper fadeInDown">
+        <div id="formContent">
+            <!-- Tabs Titles -->
+
+            <!-- Icon -->
+            <div class="fadeIn first">
+                <img src="../static/img/user.svg" id="icon" />
+            </div>
+
+            <!-- Login Form -->
+            <form method="POST">
+                <input type="text" id="nom" class="fadeIn second" name="nom" placeholder="Nom">
+                <input type="text" id="prenom" class="fadeIn second" name="prenom" placeholder="Prénom">
+                <input type="text" id="email" class="fadeIn second" name="email" placeholder="Email (login)">
+                <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
+                <input type="submit" class="fadeIn fourth" value="Enregistrer">
+            </form>
+            
+            {% if user == None %}
+            <div id="formFooter">
+                <a class="underlineHover" href="/">Sign up</a>
+            </div>
+            
+            {% endif %}
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="../static/css/home.css">

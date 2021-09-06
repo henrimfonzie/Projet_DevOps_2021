@@ -19,7 +19,7 @@ def home():
                 sess['user'] = {'id': user.id_user, 'nom' : user.nom, 'prenom' : user.prenom, 'role' : role, 'mail' : user.mail, 'pwd' : user.motdepass}
                 return render_template("navbar.html",user=sess['user']) 
             else:
-                return redirect(url_for("registration"))
+                return redirect(url_for("signin"))
     else :
         if "user" in sess :
             return render_template("navbar.html",user=sess['user']) 
@@ -51,6 +51,22 @@ def registration():
         return render_template("registration.html", user = user, users = users)
     else:
         return render_template("registration.html",user = None, users = [])
+
+
+@app.route('/signin', methods = ['POST', 'GET'])
+def signin():
+    cleanqst()
+    if request.method == 'POST':
+        nom = request.form['nom']
+        prenom = request.form['prenom']
+        email = request.form['email']
+        pwd = request.form['password']  
+        if nom and prenom and email and pwd != None:
+            user = Utilisateur(nom=nom, prenom=prenom, mail= email, motdepass=pwd, role=0)
+            createUser(user)
+            return redirect(url_for("home"))
+    else:
+        return render_template("signin.html",user = None, users = [])
 
 @app.route('/createquestion', methods = ['POST', 'GET'])
 def createquestion():
