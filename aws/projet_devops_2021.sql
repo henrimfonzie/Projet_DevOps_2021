@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS `utilisateur` (
 --
 
 INSERT INTO `utilisateur` (`id_user`, `nom`, `prenom`, `role`, `mail`, `motdepass`) VALUES
-(1, 'mfonzie', 'henri', 1, 'hmfonzie@yahoo.com', 'root');
+(1, 'default', 'admin', 1, 'admin', 'root');
 
 --
 -- Contraintes pour les tables exportées

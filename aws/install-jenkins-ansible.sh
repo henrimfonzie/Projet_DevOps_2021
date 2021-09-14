@@ -5,14 +5,11 @@
 ## On met à jour le systeme pour pouvoir insaller
 
 
-mkdir -p /home/ubuntu/ansible
 sudo apt update -y
  
 ## Installer le pré-requis Java 
 sudo apt -y install openjdk-11-jdk
  
-sudo mkdir -p /home/ubuntu/ansible
-sudo chown ubuntu:ubuntu /home/ubuntu/ansible
 
 
 
