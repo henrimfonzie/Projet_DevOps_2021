@@ -1,0 +1,9 @@
+test
+python 3 
+clean
+. clean.sh
+copy
+copy ./app /app
+run
+
+ python3 /app/app.py 

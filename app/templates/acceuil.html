@@ -1,0 +1,9 @@
+{% include 'navbar.html'  %}
+
+Welcome {{user["nom"]}} {{user["prenom"]}} 
+Vous etes connecter avec un compte 
+{% if user["role"] == "admin" %}
+Administrateur
+{% else %}
+utilisateur
+{% endif %}

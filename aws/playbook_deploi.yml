@@ -1,0 +1,7 @@
+-
+  name: deploiement
+  hosts: appli
+  become: yes
+
+  tasks:
+    
