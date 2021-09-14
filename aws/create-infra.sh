@@ -4,14 +4,14 @@ AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'Availabi
 VPC_NAME="VPC_Equipe_1"
 VPC_CIDR="10.0.0.0/16"
 SUBNET_PUBLIC_CIDR="10.0.1.0/24"
-SUBNET_PUBLIC_AZ=$AWS_REGION"a"
-SUBNET_PUBLIC_NAME="10.0.1.0 - "$AWS_REGION"a"
+SUBNET_PUBLIC_AZ=$AWS_REGION"c"
+SUBNET_PUBLIC_NAME="10.0.1.0 - "$AWS_REGION"c"
 SUBNET_PRIVATE_CIDR="10.0.2.0/24"
 SUBNET_PRIVATE_AZ=$AWS_REGION"b"
 SUBNET_PRIVATE_NAME="10.0.2.0 - "$AWS_REGION"b"
 CHECK_FREQUENCY=5
 KEY_NAME="key_Equipe_1"
-IMAGE_ID="ami-0f7cd40eac2214b37"
+IMAGE_ID="ami-0d382e80be7ffdae5"
 ENV_JENK="jenkins"
 ENV_DEV="dev"
 ENV_PROD="prod"
@@ -195,12 +195,16 @@ echo 'Les règles de sécurité ont été ajoutées'
 echo "Creation des Instances"
 INSTANCE_ID_JENKINS=$(aws_create_EC2 $ENV_JENK install-jenkins-ansible.sh)
 echo "L'instance $ENV_JENK est créée avec l'ID $INSTANCE_ID_JENKINS"
-INSTANCE_ID_DEV=$(aws_create_EC2 "$ENV_DEV")
+sleep 10
+INSTANCE_ID_DEV=$(aws_create_EC2 $ENV_DEV)
 echo "L'instance $ENV_DEV est créée avec l'ID $INSTANCE_ID_DEV"
+sleep 10
 INSTANCE_ID_PROD=$(aws_create_EC2 $ENV_PROD)
 echo "L'instance $ENV_PROD est créée avec l'ID $INSTANCE_ID_PROD"
+sleep 10
 INSTANCE_ID_TEST=$(aws_create_EC2 $ENV_TEST)
 echo "L'instance $ENV_TEST est créée avec l'ID $INSTANCE_ID_TEST"
+sleep 10
 INSTANCE_ID_NEXUS=$(aws_create_EC2 $ENV_NEXUS install-nexus.sh)
 echo "L'instance $ENV_NEXUS est créée avec l'ID $INSTANCE_ID_NEXUS"
  
@@ -318,9 +322,13 @@ INSTANCE_ID_TEST = $INSTANCE_ID_TEST
 IP_TEST = $ELASTIC_IP_TEST
 INSTANCE_ID_PROD = $INSTANCE_ID_PROD
 IP_PROD = $ELASTIC_IP_PROD
-" > infra_ID.txt
+" >> infra_ID.txt
 
 
+#copy the file to ~
+echo "Copie file Ansible (inventory & Playbook) to jenkins/~"
+scp -i $KEY_NAME"_"$ENV_JENK".pem" ./infra_ID.txt ubuntu@$ELASTIC_IP_JENKINS:/home/ubuntu
+#cp ~/infra_ID.txt /app/data.cfg
 
 echo "File Infra.txt generated"
 

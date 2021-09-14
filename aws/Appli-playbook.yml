@@ -25,6 +25,14 @@
     - name: Version Info
       debug:
         msg: "Version info {{ versioninfo.stdout }}"
+
+
+    #copy  /Projet_DevOps_2021/app to /app
+
+    # change workdir to /app
+
+
+    #
       # when: versioninfo is changed
 
       #install git

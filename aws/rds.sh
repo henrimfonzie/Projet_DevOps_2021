@@ -6,7 +6,7 @@ Identifier="SGBD_TEST"
 Engine="mysql"
 Ava_Zone="us-east-1b"
 DbName="DB_Equipe_1_TEST"
-SUBNET_RDS_a=$AWS_REGION"a"
+SUBNET_RDS_a=$AWS_REGION"c"
 SUBNET_RDS_b=$AWS_REGION"b"
 # rds PROD
 admin="admin"
@@ -21,7 +21,7 @@ identif_dev_test="RDSTEST2"
 
 rds_port="3306"
 db_name="projet_devops_2021"
-VPC_DEF_ID="vpc-13153e7a"
+VPC_DEF_ID="vpc-0a233d8c0257ebdbf"
 
 # 1 default VPC / zone ==> on renseigne l'id du VPC en param 
 echo "ID du VPC par defaut: $VPC_DEF_ID"
@@ -119,8 +119,6 @@ endpoint_test=$(aws rds describe-db-instances --db-instance-identifier $identif_
 mysql -h $endpoint_prod -P $rds_port  -u $admin -p$Password < projet_devops_2021.sql
 mysql -h $endpoint_test -P $rds_port  -u $admin_test -p$Password_test < projet_devops_2021.sql
 
-# exec du script de creation VPC et EC2 instances
-. create-infra.sh
 
 # append RDS EndPoint to infra_ID.tx
 echo "[TEST]
@@ -132,4 +130,9 @@ bd = $db_name
 user = $admin
 pwd = $Password
 host = $endpoint_prod
-bd = $db_name" >> infra_ID.txt
+bd = $db_name" > infra_ID.txt
+
+
+
+# exec du script de creation VPC et EC2 instances
+. create-infra.sh
