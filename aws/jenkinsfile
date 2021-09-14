@@ -1,9 +1,21 @@
-test
-python 3 
-clean
-. clean.sh
-copy
-copy ./app /app
-run
+pipeline {
+    agent any
 
- python3 /app/app.py 
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building..'
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Testing..'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying....'
+            }
+        }
+    }
+}
