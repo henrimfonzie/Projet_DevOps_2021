@@ -17,12 +17,12 @@ def home():
             if user != None:
                 role = "admin" if user.role != 0 else "user"   
                 sess['user'] = {'id': user.id_user, 'nom' : user.nom, 'prenom' : user.prenom, 'role' : role, 'mail' : user.mail, 'pwd' : user.motdepass}
-                return render_template("navbar.html",user=sess['user']) 
+                return render_template("acceuil.html",user=sess['user']) 
             else:
                 return redirect(url_for("signin"))
     else :
         if "user" in sess :
-            return render_template("navbar.html",user=sess['user']) 
+            return render_template("acceuil.html",user=sess['user']) 
         return render_template("home.html")      
 
 @app.route('/signout')

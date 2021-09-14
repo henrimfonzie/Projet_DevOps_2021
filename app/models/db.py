@@ -4,6 +4,6 @@ import configparser
 # fichier a modier selon l'environnement
 
 config = configparser.ConfigParser()
-config.read('data.cfg')
+config.read('/app/data.cfg')
 env=config['ENV']['name']
 RDS_URL = "mysql+pymysql://" + config[env]['user'] + ":" + config[env]['pwd'] + "@" + config[env]['host'] + "/" + config[env]['bd']
