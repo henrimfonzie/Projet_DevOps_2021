@@ -195,16 +195,16 @@ echo 'Les règles de sécurité ont été ajoutées'
 echo "Creation des Instances"
 INSTANCE_ID_JENKINS=$(aws_create_EC2 $ENV_JENK install-jenkins-ansible.sh)
 echo "L'instance $ENV_JENK est créée avec l'ID $INSTANCE_ID_JENKINS"
-sleep 10
+sleep 5
 INSTANCE_ID_DEV=$(aws_create_EC2 $ENV_DEV)
 echo "L'instance $ENV_DEV est créée avec l'ID $INSTANCE_ID_DEV"
-sleep 10
+sleep 5
 INSTANCE_ID_PROD=$(aws_create_EC2 $ENV_PROD)
 echo "L'instance $ENV_PROD est créée avec l'ID $INSTANCE_ID_PROD"
-sleep 10
+sleep 5
 INSTANCE_ID_TEST=$(aws_create_EC2 $ENV_TEST)
 echo "L'instance $ENV_TEST est créée avec l'ID $INSTANCE_ID_TEST"
-sleep 10
+sleep 5
 INSTANCE_ID_NEXUS=$(aws_create_EC2 $ENV_NEXUS install-nexus.sh)
 echo "L'instance $ENV_NEXUS est créée avec l'ID $INSTANCE_ID_NEXUS"
  

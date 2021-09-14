@@ -1,5 +1,5 @@
 #!/bin/sh
-
+now=$(date +"%T")
 # Définition des variables :
 AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
 Identifier="SGBD_TEST"
@@ -136,3 +136,6 @@ bd = $db_name" > infra_ID.txt
 
 # exec du script de creation VPC et EC2 instances
 . create-infra.sh
+
+fin=$(date +"%T")
+echo "debut : $now  ---   fin : $fin"
