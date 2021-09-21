@@ -17,8 +17,16 @@
     - name: install Flask
       shell: pip3 install flask sqlalchemy pymysql
 
+    - name: python versions
+      shell: "python3 --version"
+      register: versioninfo
+
+
     - name: install git
       shell: apt install git -y
+
+    - name: remove proj
+      shell: rm -rf Projet_DevOps_2021
 
     - name: remove app
       shell: rm -rf /app
@@ -28,9 +36,6 @@
 
     - name: move app
       shell: mv ./Projet_DevOps_2021/app /app
-
-    - name: remove proj
-      shell: rm -rf Projet_DevOps_2021
 
     - name: copy conf.data
       ansible.builtin.copy:
