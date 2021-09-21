@@ -4,10 +4,10 @@
   become: yes
 
   tasks:
-  
+
     - name: Test ping
       ping:
-  
+
     - name: update
       shell: apt update -y
 
@@ -17,27 +17,25 @@
     - name: install Flask
       shell: pip3 install flask sqlalchemy pymysql
 
-    - name: python versions
-      shell: "python3 --version"
-      register: versioninfo
+    - name: install git
+      shell: apt install git -y
 
+    - name: remove app
+      shell: rm -rf /app
 
-    - name: Version Info
-      debug:
-        msg: "Version info {{ versioninfo.stdout }}"
+    - name: clone git
+      shell: git clone https://github.com/henrimfonzie/Projet_DevOps_2021.git
 
+    - name: move app
+      shell: mv ./Projet_DevOps_2021/app /app
 
-    #copy  /Projet_DevOps_2021/app to /app
+    - name: remove proj
+      shell: rm -rf Projet_DevOps_2021
 
-    # change workdir to /app
+    - name: copy conf.data
+      ansible.builtin.copy:
+        src: /home/ubuntu/infra_ID.txt
+        dest: /app/data.cfg
 
-
-    #
-      # when: versioninfo is changed
-
-      #install git
-
-      #clone projet
-
-      #run projet flask
-
+    - name: run app
+      shell: nohup python3 /app/app.py &
