@@ -4,10 +4,10 @@
   become: yes
 
   tasks:
-  
+
     - name: Test ping
       ping:
-  
+
     - name: update
       shell: apt update -y
 
@@ -22,22 +22,22 @@
       register: versioninfo
 
 
-    - name: Version Info
-      debug:
-        msg: "Version info {{ versioninfo.stdout }}"
+    - name: install git
+      shell: apt install git -y
 
+    - name: remove proj
+      shell: rm -rf Projet_DevOps_2021
 
-    #copy  /Projet_DevOps_2021/app to /app
+    - name: clone git
+      shell: git clone https://github.com/henrimfonzie/Projet_DevOps_2021.git
 
-    # change workdir to /app
+    - name: move app
+      shell: mv ./Projet_DevOps_2021/app /app
 
+    - name: copy conf.data
+      ansible.builtin.copy:
+        src: /home/ubuntu/infra_ID.txt
+        dest: /app/data.cfg
 
-    #
-      # when: versioninfo is changed
-
-      #install git
-
-      #clone projet
-
-      #run projet flask
-
+    - name: run app
+      shell: python3 /app/app.py &
