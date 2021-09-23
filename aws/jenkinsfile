@@ -2,19 +2,14 @@ pipeline {
     agent any
 
     stages {
-        stage('Build') {
-            steps {
-                echo 'Building..'
-            }
-        }
         stage('Test') {
             steps {
-                echo 'Testing..'
+                sh 'python3 /app/test.py'
             }
         }
-        stage('Deploy') {
+        stage('Build  clean & deploy via Ansible') {
             steps {
-                echo 'Deploying....'
+                sh 'ansible-playbook -i /home/ubuntu/machines.txt /home/ubuntu/Appli-playbook.yml'
             }
         }
     }

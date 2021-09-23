@@ -1,9 +1,9 @@
 {% include 'navbar.html'  %}
 
-Welcome {{user["nom"]}} {{user["prenom"]}} 
-Vous etes connecter avec un compte 
+Welcome <p>{{user["nom"]}} {{user["prenom"]}} </p><br/>
+Vous etes connecter avec un compte <p>
 {% if user["role"] == "admin" %}
 Administrateur
 {% else %}
 utilisateur
-{% endif %}
+{% endif %} </p> !<br/> 
